@@ -2,9 +2,11 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
+import { Resend } from 'resend'
+import React from 'react'
+import { TicketEmail } from './emails/TicketEmail'
 
-// --- 1. Definimos la forma EXACTA de los datos del Ticket ---
-// Esto soluciona el error de "Property title missing"
+// --- INTERFACES ---
 interface TicketData {
   id: string
   status: string
@@ -12,18 +14,41 @@ interface TicketData {
   customer_email: string | null
   event: {
     title: string
-  } | null // Puede ser null si el evento se borró
+  } | null
 }
 
+interface InsertedTicket {
+  id: string
+  qr_token: string | null
+}
+
+// --- FUNCIÓN DE COMPRA ---
 export async function purchaseTickets(
   eventId: string,
   email: string,
   quantity: number
 ) {
+  // 1. Inicializamos Resend AQUÍ DENTRO para evitar errores de carga
+  const resend = new Resend(process.env.RESEND_API_KEY)
   const supabase = await createClient()
 
   const safeQuantity = Number.isFinite(quantity) && quantity > 0 ? quantity : 1
 
+  // 2. Recuperar datos del evento
+  const { data: event, error: eventError } = await supabase
+    .from('events')
+    .select('title')
+    .eq('id', eventId)
+    .single()
+
+  if (eventError || !event) {
+    console.error('Error fetching event for purchase', eventError)
+    throw new Error('Evento no encontrado. Inténtalo de nuevo.')
+  }
+
+  const eventTitle = event.title ?? 'Evento'
+
+  // 3. Preparar e insertar tickets
   const rows = Array.from({ length: safeQuantity }, () => ({
     event_id: eventId,
     customer_email: email,
@@ -33,38 +58,54 @@ export async function purchaseTickets(
   const { data: insertedTickets, error } = await supabase
     .from('tickets')
     .insert(rows)
-    .select('id')
+    .select('id, qr_token')
 
   if (error) {
     console.error('Error inserting tickets', error)
     throw new Error('No se pudo completar la compra. Inténtalo de nuevo.')
   }
 
-  const ticketIds =
-    insertedTickets?.map((t: { id: string | number }) => t.id).join(',') ?? ''
+  // 4. Enviar correos
+  const tickets = (insertedTickets ?? []) as InsertedTicket[]
+  const fromEmail = 'Vouncer <onboarding@resend.dev>' // Solo funciona si envías a tu propio email registrado
 
+  // Usamos Promise.all para que sea más rápido (en paralelo)
+  try {
+    const emailPromises = tickets.map((t) => {
+      const qrToken = t.qr_token ?? t.id
+      return resend.emails.send({
+        from: fromEmail,
+        to: email, // IMPORTANTE: En modo test, este email debe ser el tuyo (el admin de Resend)
+        subject: `Tu entrada para ${eventTitle} 🎟️`,
+        react: React.createElement(TicketEmail, {
+          eventName: eventTitle,
+          ticketId: t.id,
+          qrToken,
+          quantity: tickets.length,
+        }),
+      })
+    })
+
+    await Promise.all(emailPromises)
+    console.log(`✅ ${tickets.length} emails enviados a ${email}`)
+  } catch (sendError) {
+    console.error('❌ Error enviando emails:', sendError)
+    // No bloqueamos, dejamos que el usuario vea su ticket en la web
+  }
+
+  // 5. Redirección
+  const ticketIds = tickets.map((t) => t.id).join(',')
   redirect(`/success?ids=${ticketIds}&email=${encodeURIComponent(email)}`)
 }
 
-// --- Tipado de la respuesta de validación ---
+// --- FUNCIÓN DE VALIDACIÓN (Scan) ---
 type ValidateTicketResult =
-  | {
-      success: false
-      message: string
-    }
-  | {
-      success: true
-      message: string
-      data: {
-        eventTitle: string | null
-        email: string | null
-      }
-    }
+  | { success: false; message: string }
+  | { success: true; message: string; data: { eventTitle: string | null; email: string | null } }
 
 export async function validateTicket(qrToken: string): Promise<ValidateTicketResult> {
   const supabase = await createClient()
 
-  // 1. Obtenemos los datos "crudos" de la base de datos
   const { data, error } = await supabase
     .from('tickets')
     .select('id, status, validated_at, customer_email, event:events(title)')
@@ -72,70 +113,42 @@ export async function validateTicket(qrToken: string): Promise<ValidateTicketRes
     .maybeSingle()
 
   if (error) {
-    console.error('Error fetching ticket for validation', error)
-    return {
-      success: false,
-      message: 'Error al validar el ticket. Intenta de nuevo.',
-    }
+    console.error('Error fetching ticket', error)
+    return { success: false, message: 'Error al validar.' }
   }
 
-  // Caso 1: No existe
-  if (!data) {
-    return {
-      success: false,
-      message: 'Ticket NO VÁLIDO ❌',
-    }
-  }
+  if (!data) return { success: false, message: 'Ticket NO VÁLIDO ❌' }
 
-  // --- AQUÍ ESTÁ EL ARREGLO ---
-  // Forzamos a TypeScript a entender que 'data' cumple con nuestra interfaz TicketData
   const ticket = data as unknown as TicketData
 
-  // Caso 2: Ya usado
   if (ticket.status === 'used') {
     const when = ticket.validated_at
       ? new Date(ticket.validated_at).toLocaleString('es-ES', {
-          timeZone: 'America/Bogota', // Opcional: Ajusta a tu zona horaria si quieres
+          timeZone: 'Europe/Madrid', // 🇪🇸 Hora de España
+          hour: '2-digit',
+          minute: '2-digit'
         })
       : 'antes'
-
-    return {
-      success: false,
-      message: `Ticket YA USADO (Hora: ${when}) ⚠️`,
-    }
+    return { success: false, message: `Ticket YA USADO (${when}) ⚠️` }
   }
 
-  // Caso 3: Éxito -> marcar como usado
   if (ticket.status === 'paid') {
-    const nowIso = new Date().toISOString()
-
     const { error: updateError } = await supabase
       .from('tickets')
-      .update({ status: 'used', validated_at: nowIso })
+      .update({ status: 'used', validated_at: new Date().toISOString() })
       .eq('id', ticket.id)
 
-    if (updateError) {
-      console.error('Error updating ticket as used', updateError)
-      return {
-        success: false,
-        message: 'No se pudo marcar el ticket como usado. Intenta de nuevo.',
-      }
-    }
+    if (updateError) return { success: false, message: 'Fallo al validar.' }
 
     return {
       success: true,
       message: 'ACCESO PERMITIDO ✅',
       data: {
-        // Usamos ?. por si acaso 'event' viniera null
-        eventTitle: ticket.event?.title ?? 'Evento desconocido',
+        eventTitle: ticket.event?.title ?? 'Evento',
         email: ticket.customer_email ?? null,
       },
     }
   }
 
-  // Estado desconocido
-  return {
-    success: false,
-    message: 'Estado de ticket no válido para acceso.',
-  }
+  return { success: false, message: 'Estado inválido.' }
 }
