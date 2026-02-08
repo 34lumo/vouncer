@@ -1,81 +1,149 @@
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
+import { ArrowRight, CalendarDays, MapPin, Ticket } from 'lucide-react'
+import { LayoutTextFlip } from "@/components/ui/layout-text-flip";
+// YA NO IMPORTAMOS EL NAVBAR AQUÍ
+
+export const revalidate = 0
 
 export default async function Home() {
   const supabase = await createClient()
+
+  // Consulta a Supabase
   const { data: events, error } = await supabase
     .from('events')
     .select('*, venues(name, city)')
+    .order('event_date', { ascending: true })
+    .limit(6)
+
+  const formatPrice = (price: number | string | null) => {
+    if (!price) return 'Gratis'
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price
+    if (isNaN(numPrice)) return 'Gratis'
+    return `$${Math.round(numPrice).toLocaleString('es-CO')}`
+  }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Hero Section */}
-      <section className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-        <h1 className="text-5xl md:text-6xl font-bold mb-4">
-          El control total de tu evento
-        </h1>
-        <p className="text-gray-400 text-lg md:text-xl mb-8">
-          Compra entradas en segundos. Sin registros.
-        </p>
-        <button className="bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors">
-          Ver Fiestas
-        </button>
-      </section>
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-sky-500/30 font-sans overflow-x-hidden">
+      
+      {/* --- AQUÍ YA NO HAY NAVBAR --- */}
+      {/* Se cargará automáticamente desde el layout */}
 
-      {/* Grid de Eventos */}
-      <section className="max-w-7xl mx-auto px-4 pb-16">
-        {error ? (
-          <div className="text-center text-red-400">
-            <p>Error al cargar eventos: {error.message}</p>
-          </div>
-        ) : !events || events.length === 0 ? (
-          <div className="text-center text-gray-400">
-            <p>No hay eventos disponibles</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {events.map((event) => {
-              const venue = event.venues as { name: string; city: string } | null
-              const eventDate = event.event_date ? new Date(event.event_date) : null
-              const formattedDate = eventDate
-                ? eventDate.toLocaleDateString('es-ES', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                  })
-                : 'Fecha no disponible'
+      {/* --- FONDO AMBIENTAL --- */}
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute top-[-10%] left-[-20%] w-[70vw] h-[70vw] bg-sky-600/10 rounded-full blur-[180px] mix-blend-screen opacity-40" />
+        <div className="absolute bottom-[-10%] right-[-20%] w-[60vw] h-[60vw] bg-zinc-600/10 rounded-full blur-[180px] mix-blend-screen opacity-30" />
+      </div>
 
-              const formatPrice = (price: number | string | null) => {
-                if (!price) return null
-                const numPrice = typeof price === 'string' ? parseFloat(price) : price
-                if (isNaN(numPrice)) return null
-                return `$${Math.round(numPrice).toLocaleString('es-CO')}`
-              }
+      <main className="relative z-10">
+        
+        {/* HERO SECTION */}
+        {/* Mantenemos el padding superior (pt-40) para que el Navbar global no tape el texto */}
+        <section className="relative pt-40 pb-20 md:pt-52 md:pb-32 px-6 flex flex-col items-center justify-center min-h-[70vh]">
+          <div className="max-w-6xl mx-auto text-center space-y-10">
+            
+            <div className="py-2">
+                <LayoutTextFlip 
+                    text="Entradas al momento para"
+                    words={["Theatron", "Kaputt", "Baum", "Octava", "Video Club", "Clandestino"]} 
+                />
+            </div>
+            
+            <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto font-light leading-relaxed">
+              La plataforma oficial de los mejores eventos de Bogotá. <br className="hidden md:block" />
+              Sin filas, sin efectivo, directo a la fiesta.
+            </p>
 
-              return (
-                <Link
-                  key={event.id}
-                  href={`/events/${event.id}`}
-                  className="bg-gray-900 border border-gray-800 rounded-lg p-6 hover:border-gray-700 transition-colors block"
-                >
-                  <h3 className="text-xl font-semibold mb-2">{event.title}</h3>
-                  {venue && (
-                    <p className="text-violet-400 mb-1">
-                      {venue.name} - {venue.city}
-                    </p>
-                  )}
-                  <p className="text-gray-400 text-sm mb-2">{formattedDate}</p>
-                  {event.price && formatPrice(event.price) && (
-                    <p className="text-white font-bold text-lg">
-                      {formatPrice(event.price)}
-                    </p>
-                  )}
-                </Link>
-              )
-            })}
+            <div className="pt-6">
+               <a href="#eventos" className="group relative inline-flex items-center gap-3 px-8 py-4 bg-white text-black rounded-full font-bold text-base transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+                 Ver Próximas Fiestas
+                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+               </a>
+            </div>
           </div>
-        )}
-      </section>
+        </section>
+
+        {/* EVENTS GRID */}
+        <section id="eventos" className="py-24 px-6 relative border-t border-white/5 bg-black/20 backdrop-blur-sm">
+           <div className="max-w-7xl mx-auto">
+              <div className="flex justify-between items-end mb-12">
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">Cartelera Semanal</h2>
+                  <p className="text-zinc-400">Eventos verificados y disponibles ahora.</p>
+                </div>
+              </div>
+
+              {error ? (
+                <div className="text-center py-20 border border-red-500/20 bg-red-500/5 rounded-3xl">
+                  <p className="text-red-400">Error cargando eventos: {error.message}</p>
+                </div>
+              ) : !events || events.length === 0 ? (
+                <div className="text-center py-32 border-2 border-dashed border-white/5 rounded-[2rem] bg-zinc-900/20">
+                  <Ticket className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+                  <p className="text-zinc-400 text-lg">No hay eventos disponibles por ahora.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {events.map((event) => {
+                    const venue = event.venues as { name: string; city: string } | null
+                    const locationText = venue ? `${venue.name}, ${venue.city}` : 'Ubicación secreta'
+                    const eventDate = event.event_date ? new Date(event.event_date) : null
+                    const day = eventDate ? eventDate.toLocaleDateString('es-ES', { day: 'numeric' }) : '?'
+                    const month = eventDate ? eventDate.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase().replace('.', '') : ''
+                    const time = eventDate ? eventDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'
+                    
+                    return (
+                      <Link 
+                        key={event.id}
+                        href={`/events/${event.id}`}
+                        className="group relative flex flex-col bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:border-sky-500/30"
+                      >
+                        <div className="h-64 bg-gradient-to-b from-zinc-800 via-zinc-900/80 to-black/50 w-full relative overflow-hidden">
+                          <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:opacity-30 transition-all duration-500 group-hover:scale-110 text-sky-200">
+                            <Ticket className="w-28 h-28" />
+                          </div>
+                          <div className="absolute top-5 left-5 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-3 min-w-[64px] text-center z-10">
+                            <span className="block text-2xl font-extrabold text-white leading-none">{day}</span>
+                            <span className="block text-[11px] text-sky-300 font-bold tracking-wider mt-1">{month}</span>
+                          </div>
+                        </div>
+
+                        <div className="p-8 flex flex-col flex-grow relative">
+                          <h3 className="text-2xl font-bold text-white mb-3 line-clamp-2 z-10 group-hover:text-sky-100 transition-colors">
+                            {event.title}
+                          </h3>
+                          <div className="flex flex-col gap-2 text-zinc-400 text-sm mb-8 z-10">
+                            <span className="flex items-center gap-2">
+                              <MapPin className="w-4 h-4 text-zinc-500" /> 
+                              <span className="truncate">{locationText}</span>
+                            </span>
+                            <span className="flex items-center gap-2">
+                              <CalendarDays className="w-4 h-4 text-zinc-500" /> 
+                              <span>{time}h</span>
+                            </span>
+                          </div>
+                          <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between z-10 relative">
+                            <div>
+                              <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-1">Entrada</p>
+                              <p className="text-xl font-bold text-white">{formatPrice(event.price)}</p>
+                            </div>
+                            <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-sky-500 group-hover:border-sky-500 transition-all duration-300 group-hover:scale-110">
+                              <ArrowRight className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+           </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-white/5 py-12 bg-black/40 relative z-10 text-center text-zinc-600 text-sm">
+        <p>© 2026 Vouncer Inc. Todos los derechos reservados.</p>
+      </footer>
     </div>
   )
 }

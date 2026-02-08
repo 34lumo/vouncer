@@ -1,100 +1,94 @@
 import Link from 'next/link'
-import { createClient } from '@/utils/supabase/server'
-import { TicketsReveal } from './TicketsReveal'
+import { CheckCircle, ArrowRight, Ticket } from 'lucide-react'
+import QRCode from "react-qr-code"; 
 
-interface SuccessPageProps {
-  searchParams: Promise<{ email?: string; ids?: string }>
-}
-
-type TicketRow = {
-  id: string
-  qr_token: string | null
-  event: {
-    title: string
-    venues: {
-      name: string
-      city: string
-    } | null
-  } | null
-}
-
-export default async function SuccessPage({ searchParams }: SuccessPageProps) {
-  const { email, ids } = await searchParams
-  const displayEmail = email || 'tu correo'
-
-  const supabase = await createClient()
-
-  let tickets: TicketRow[] = []
-
-  if (ids) {
-    const idsArray = ids.split(',').map((id) => id.trim()).filter(Boolean)
-
-    if (idsArray.length > 0) {
-      const { data, error } = await supabase
-        .from('tickets')
-        .select(
-          'id, qr_token, event:events(title, venues(name, city))'
-        )
-        .in('id', idsArray)
-
-      if (error) {
-        console.error('Error fetching tickets for success page', error)
-      } else if (data) {
-        tickets = (data as unknown as TicketRow[]) ?? []
-      }
-    }
-  }
+export default async function SuccessPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ email?: string }>
+}) {
+  const { email } = await searchParams
+  const userEmail = email || 'tu correo'
+  
+  const ticketId = `VNC-${Date.now().toString().slice(-6)}`;
 
   return (
-    <div className="min-h-screen bg-black text-white px-4 py-10">
-      <div className="max-w-5xl mx-auto space-y-10">
-        {/* Header de éxito */}
-        <div className="max-w-xl mx-auto bg-gray-900 border border-gray-800 rounded-2xl p-8 text-center shadow-2xl">
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-900/30 border border-green-600">
-            <svg
-              className="h-12 w-12 text-green-400"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M20 6L9 17L4 12"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
+    <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      
+      {/* Fondo Ambiental */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+          <div className="absolute top-[20%] left-[50%] -translate-x-1/2 w-[500px] h-[500px] bg-green-500/10 rounded-full blur-[120px]" />
+      </div>
 
-          <h1 className="text-3xl font-extrabold mb-3">¡Entradas aseguradas!</h1>
-          <p className="text-gray-300 mb-6">
-            Hemos enviado tus entradas a{' '}
-            <span className="font-semibold text-white">{displayEmail}</span>.
-          </p>
-
-          <p className="text-sm text-gray-500 mb-8">
-            Revisa también tu carpeta de spam o promociones. En puerta solo tendrás
-            que mostrar el código QR que te enviamos.
-          </p>
-
-          <Link
-            href="/"
-            className="inline-flex justify-center w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-          >
-            Volver a inicio
-          </Link>
+      <div className="relative z-10 flex flex-col items-center max-w-sm w-full animate-in fade-in zoom-in duration-500">
+        
+        {/* Cabecera de Éxito */}
+        <div className="mb-8 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/10 mb-4 ring-1 ring-green-500/50">
+                <CheckCircle className="w-8 h-8 text-green-400" />
+            </div>
+            <h1 className="text-3xl font-bold text-white mb-2">¡Pago Confirmado!</h1>
+            <p className="text-zinc-400 text-sm">
+              Hemos enviado una copia a <span className="text-white">{userEmail}</span>.
+            </p>
         </div>
 
-        {/* Sección de Tickets */}
-        {tickets.length > 0 && (
-          <section className="space-y-4">
-            <h2 className="text-2xl font-bold">Tus Entradas</h2>
-            <TicketsReveal tickets={tickets} />
-          </section>
-        )}
+        {/* --- TICKET DIGITAL VISUAL --- */}
+        <div className="w-full bg-white text-black rounded-3xl p-6 shadow-2xl shadow-green-900/20 relative overflow-hidden">
+            {/* Muescas del ticket (Efecto visual) */}
+            <div className="absolute top-2/3 -left-3 w-6 h-6 bg-[#050505] rounded-full" />
+            <div className="absolute top-2/3 -right-3 w-6 h-6 bg-[#050505] rounded-full" />
+            
+            {/* Cabecera del Ticket */}
+            <div className="flex justify-between items-start mb-6">
+                <div>
+                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">VOUNCER PASS</p>
+                    <h2 className="text-xl font-black mt-1">ACCESO GENERAL</h2>
+                </div>
+                <Ticket className="w-6 h-6 text-zinc-300" />
+            </div>
+
+            {/* EL CÓDIGO QR */}
+            <div className="flex flex-col items-center justify-center py-4 bg-zinc-50 rounded-2xl border border-zinc-100">
+                <div className="bg-white p-2 rounded-lg">
+                    <QRCode 
+                        value={ticketId} 
+                        size={160}
+                        viewBox={`0 0 256 256`}
+                        fgColor="#000000"
+                        bgColor="#ffffff"
+                    />
+                </div>
+                <p className="text-[10px] font-mono text-zinc-400 mt-2 tracking-widest">{ticketId}</p>
+            </div>
+            
+            {/* Footer del Ticket */}
+            <div className="mt-8 pt-4 border-t border-dashed border-zinc-300 flex justify-between items-center">
+                <div className="text-left">
+                    <p className="text-[10px] uppercase text-zinc-400 font-bold">Estado</p>
+                    <p className="font-bold text-sm text-green-600 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                        ACTIVO
+                    </p>
+                </div>
+                <div className="text-right">
+                    <p className="text-[10px] uppercase text-zinc-400 font-bold">Válido para</p>
+                    <p className="font-bold text-sm">1 Persona</p>
+                </div>
+            </div>
+        </div>
+
+        {/* Botón Volver */}
+        <div className="mt-8 w-full">
+            <Link 
+                href="/"
+                className="flex items-center justify-center gap-2 w-full text-zinc-500 hover:text-white py-3 transition-colors text-sm hover:bg-white/5 rounded-xl"
+            >
+                Volver al inicio <ArrowRight className="w-4 h-4" />
+            </Link>
+        </div>
+
       </div>
     </div>
   )
 }
-

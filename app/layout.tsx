@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from './components/Navbar' // <--- 1. Importado correctamente
+// IMPORTAMOS EL NAVBAR CON GLOW QUE CREAMOS
+import { Navbar } from "@/components/ui/navbar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vouncer", // <--- Le he puesto el nombre real
+  title: "Vouncer",
   description: "Gestión de entradas",
 };
 
@@ -26,9 +27,10 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white`} // <--- He forzado fondo negro aquí
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white`}
       >
-        <Navbar /> {/* <--- 2. ¡AQUÍ ES DONDE FALTABA! */}
+        {/* NAVBAR GLOBAL: Se aplicará a todo el sitio */}
+        <Navbar />
         
         <main className="min-h-screen">
           {children}
