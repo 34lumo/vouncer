@@ -1,15 +1,14 @@
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
+import Image from 'next/image' // <--- IMPORTANTE: Importamos Image
 import { ArrowRight, CalendarDays, MapPin, Ticket } from 'lucide-react'
 import { LayoutTextFlip } from "@/components/ui/layout-text-flip";
-// YA NO IMPORTAMOS EL NAVBAR AQUÍ
 
 export const revalidate = 0
 
 export default async function Home() {
   const supabase = await createClient()
 
-  // Consulta a Supabase
   const { data: events, error } = await supabase
     .from('events')
     .select('*, venues(name, city)')
@@ -26,22 +25,38 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-sky-500/30 font-sans overflow-x-hidden">
       
-      {/* --- AQUÍ YA NO HAY NAVBAR --- */}
-      {/* Se cargará automáticamente desde el layout */}
+      {/* --- FONDO AMBIENTAL "PRO" --- */}
+      <div aria-hidden="true" className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        
+        {/* 1. LA IMAGEN DE FONDO (background.png) */}
+        <div className="absolute inset-0 w-full h-full">
+            <Image 
+                src="/background.png" 
+                alt="Background Vouncer"
+                fill
+                priority
+                className="object-cover opacity-50 mix-blend-luminosity"                // opacity-60: Para que no brille mucho y se lea el texto
+                // mix-blend-luminosity: (Opcional) Hace que la foto sea blanco y negro azulado, queda muy elegante. Si la quieres a color, quita esta clase.
+            />
+        </div>
 
-      {/* --- FONDO AMBIENTAL --- */}
-      <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div className="absolute top-[-10%] left-[-20%] w-[70vw] h-[70vw] bg-sky-600/10 rounded-full blur-[180px] mix-blend-screen opacity-40" />
-        <div className="absolute bottom-[-10%] right-[-20%] w-[60vw] h-[60vw] bg-zinc-600/10 rounded-full blur-[180px] mix-blend-screen opacity-30" />
+        {/* 2. CAPA DE DEGRADADO (Para que el texto se lea bien) */}
+        {/* Esto oscurece la imagen un poco arriba y la funde a negro total abajo */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-[#050505]/80 to-[#050505]" />
+
+        {/* 3. TUS ORBES DE LUZ (Los mantengo porque dan profundidad encima de la foto) */}
+        <div className="absolute top-[-10%] left-[-20%] w-[70vw] h-[70vw] bg-sky-600/10 rounded-full blur-[180px] mix-blend-overlay opacity-50" />
+        <div className="absolute bottom-[-10%] right-[-20%] w-[60vw] h-[60vw] bg-zinc-600/10 rounded-full blur-[180px] mix-blend-overlay opacity-30" />
       </div>
+
 
       <main className="relative z-10">
         
         {/* HERO SECTION */}
-        {/* Mantenemos el padding superior (pt-40) para que el Navbar global no tape el texto */}
         <section className="relative pt-40 pb-20 md:pt-52 md:pb-32 px-6 flex flex-col items-center justify-center min-h-[70vh]">
           <div className="max-w-6xl mx-auto text-center space-y-10">
             
+            {/* Texto Flip */}
             <div className="py-2">
                 <LayoutTextFlip 
                     text="Entradas al momento para"
@@ -49,7 +64,7 @@ export default async function Home() {
                 />
             </div>
             
-            <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto font-light leading-relaxed">
+            <p className="text-lg md:text-xl text-zinc-300 max-w-2xl mx-auto font-light leading-relaxed drop-shadow-md">
               La plataforma oficial de los mejores eventos de Bogotá. <br className="hidden md:block" />
               Sin filas, sin efectivo, directo a la fiesta.
             </p>
@@ -64,7 +79,8 @@ export default async function Home() {
         </section>
 
         {/* EVENTS GRID */}
-        <section id="eventos" className="py-24 px-6 relative border-t border-white/5 bg-black/20 backdrop-blur-sm">
+        {/* Nota: Aquí añadimos backdrop-blur-md para que el grid "borre" la foto de fondo al pasar por encima */}
+        <section id="eventos" className="py-24 px-6 relative border-t border-white/5 bg-[#050505]/80 backdrop-blur-xl">
            <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-end mb-12">
                 <div>

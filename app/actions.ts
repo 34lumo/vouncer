@@ -3,8 +3,8 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { Resend } from 'resend'
-import React from 'react'
-import { TicketEmail } from './emails/TicketEmail'
+import { render } from '@react-email/render'
+import TicketEmail from './emails/ticket-email'
 
 // --- INTERFACES ---
 interface TicketData {
@@ -26,18 +26,18 @@ interface InsertedTicket {
 export async function purchaseTickets(
   eventId: string,
   email: string,
+  name: string, // <--- NUEVO: Recibimos el nombre
   quantity: number
 ) {
-  // 1. Inicializamos Resend AQUÍ DENTRO para evitar errores de carga
   const resend = new Resend(process.env.RESEND_API_KEY)
   const supabase = await createClient()
 
   const safeQuantity = Number.isFinite(quantity) && quantity > 0 ? quantity : 1
 
-  // 2. Recuperar datos del evento
+  // 1. RECUPERAR DATOS DEL EVENTO
   const { data: event, error: eventError } = await supabase
     .from('events')
-    .select('title')
+    .select('title, event_date, price, venues(name, city)')
     .eq('id', eventId)
     .single()
 
@@ -46,13 +46,30 @@ export async function purchaseTickets(
     throw new Error('Evento no encontrado. Inténtalo de nuevo.')
   }
 
-  const eventTitle = event.title ?? 'Evento'
+  // 2. Preparar variables para el email
+  const eventTitle = event.title ?? 'Evento Vouncer'
+  
+  const eventDateObj = event.event_date ? new Date(event.event_date) : null
+  const eventDateStr = eventDateObj 
+    ? eventDateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    : 'Fecha por confirmar'
 
-  // 3. Preparar e insertar tickets
+  const venueData = event.venues as any
+  const venue = Array.isArray(venueData) ? venueData[0] : venueData
+  const eventLocationStr = venue ? `${venue.name}, ${venue.city}` : 'Ubicación Secreta'
+
+  const priceStr = event.price 
+    ? `$${new Intl.NumberFormat('es-CO').format(event.price)}` 
+    : 'Gratis'
+
+
+  // 3. INSERTAR TICKETS EN BASE DE DATOS
   const rows = Array.from({ length: safeQuantity }, () => ({
     event_id: eventId,
     customer_email: email,
+    customer_name: name, // <--- NUEVO: Guardamos el nombre en la BD
     status: 'paid' as const,
+    qr_token: crypto.randomUUID() 
   }))
 
   const { data: insertedTickets, error } = await supabase
@@ -65,40 +82,49 @@ export async function purchaseTickets(
     throw new Error('No se pudo completar la compra. Inténtalo de nuevo.')
   }
 
-  // 4. Enviar correos
+  // 4. ENVIAR CORREOS "GUAPOS"
   const tickets = (insertedTickets ?? []) as InsertedTicket[]
-  const fromEmail = 'Vouncer <onboarding@resend.dev>' // Solo funciona si envías a tu propio email registrado
+  const fromEmail = 'Vouncer <onboarding@resend.dev>' 
 
-  // Usamos Promise.all para que sea más rápido (en paralelo)
   try {
-    const emailPromises = tickets.map((t) => {
+    const emailPromises = tickets.map(async (t) => {
       const qrToken = t.qr_token ?? t.id
+      
+      const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrToken}`
+
+      const emailHtml = await render(TicketEmail({
+        userEmail: email,
+        userName: name, // <--- NUEVO: Pasamos el nombre al email
+        eventName: eventTitle,
+        ticketId: t.id.slice(0, 8).toUpperCase(),
+        qrCodeUrl: qrImageUrl,
+        eventDate: eventDateStr,
+        eventLocation: eventLocationStr,
+        price: priceStr
+      }))
+
       return resend.emails.send({
         from: fromEmail,
-        to: email, // IMPORTANTE: En modo test, este email debe ser el tuyo (el admin de Resend)
-        subject: `Tu entrada para ${eventTitle} 🎟️`,
-        react: React.createElement(TicketEmail, {
-          eventName: eventTitle,
-          ticketId: t.id,
-          qrToken,
-          quantity: tickets.length,
-        }),
+        to: email,
+        subject: `¡Estás dentro! Tu entrada para ${eventTitle} 🦍`,
+        html: emailHtml,
       })
     })
 
     await Promise.all(emailPromises)
     console.log(`✅ ${tickets.length} emails enviados a ${email}`)
+    
   } catch (sendError) {
     console.error('❌ Error enviando emails:', sendError)
-    // No bloqueamos, dejamos que el usuario vea su ticket en la web
   }
 
-  // 5. Redirección
+  // 5. REDIRECCIÓN
   const ticketIds = tickets.map((t) => t.id).join(',')
   redirect(`/success?ids=${ticketIds}&email=${encodeURIComponent(email)}`)
 }
 
-// --- FUNCIÓN DE VALIDACIÓN (Scan) ---
+// --- FUNCIÓN DE VALIDACIÓN (SCAN) ---
+// (Esta parte NO CAMBIA, se queda igual)
 type ValidateTicketResult =
   | { success: false; message: string }
   | { success: true; message: string; data: { eventTitle: string | null; email: string | null } }
@@ -124,7 +150,7 @@ export async function validateTicket(qrToken: string): Promise<ValidateTicketRes
   if (ticket.status === 'used') {
     const when = ticket.validated_at
       ? new Date(ticket.validated_at).toLocaleString('es-ES', {
-          timeZone: 'Europe/Madrid', // 🇪🇸 Hora de España
+          timeZone: 'Europe/Madrid',
           hour: '2-digit',
           minute: '2-digit'
         })
