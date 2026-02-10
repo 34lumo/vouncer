@@ -26,7 +26,7 @@ interface InsertedTicket {
 export async function purchaseTickets(
   eventId: string,
   email: string,
-  name: string, // <--- NUEVO: Recibimos el nombre
+  name: string,
   quantity: number
 ) {
   const resend = new Resend(process.env.RESEND_API_KEY)
@@ -48,9 +48,9 @@ export async function purchaseTickets(
 
   // 2. Preparar variables para el email
   const eventTitle = event.title ?? 'Evento Vouncer'
-  
+
   const eventDateObj = event.event_date ? new Date(event.event_date) : null
-  const eventDateStr = eventDateObj 
+  const eventDateStr = eventDateObj
     ? eventDateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
     : 'Fecha por confirmar'
 
@@ -58,8 +58,8 @@ export async function purchaseTickets(
   const venue = Array.isArray(venueData) ? venueData[0] : venueData
   const eventLocationStr = venue ? `${venue.name}, ${venue.city}` : 'Ubicación Secreta'
 
-  const priceStr = event.price 
-    ? `$${new Intl.NumberFormat('es-CO').format(event.price)}` 
+  const priceStr = event.price
+    ? `$${new Intl.NumberFormat('es-CO').format(event.price)}`
     : 'Gratis'
 
 
@@ -67,9 +67,9 @@ export async function purchaseTickets(
   const rows = Array.from({ length: safeQuantity }, () => ({
     event_id: eventId,
     customer_email: email,
-    customer_name: name, // <--- NUEVO: Guardamos el nombre en la BD
+    customer_name: name,
     status: 'paid' as const,
-    qr_token: crypto.randomUUID() 
+    qr_token: crypto.randomUUID()
   }))
 
   const { data: insertedTickets, error } = await supabase
@@ -82,26 +82,39 @@ export async function purchaseTickets(
     throw new Error('No se pudo completar la compra. Inténtalo de nuevo.')
   }
 
-  // 4. ENVIAR CORREOS "GUAPOS"
+  // 4. ENVIAR CORREOS
   const tickets = (insertedTickets ?? []) as InsertedTicket[]
-  const fromEmail = 'Vouncer <onboarding@resend.dev>' 
+
+  // ⚠️ OJO: Usa aquí el correo que prefieras (hola, contact, soporte...)
+  const fromEmail = 'Vouncer <hola@vouncer.com>'
 
   try {
     const emailPromises = tickets.map(async (t) => {
       const qrToken = t.qr_token ?? t.id
-      
+
       const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrToken}`
 
+      // Renderizamos el email con los datos
       const emailHtml = await render(TicketEmail({
         userEmail: email,
-        userName: name, // <--- NUEVO: Pasamos el nombre al email
+        userName: name,
         eventName: eventTitle,
-        ticketId: t.id.slice(0, 8).toUpperCase(),
+        ticketId: t.id, // Pasamos el ID completo para que funcione el link
         qrCodeUrl: qrImageUrl,
         eventDate: eventDateStr,
         eventLocation: eventLocationStr,
         price: priceStr
       }))
+
+      // 🔍 DEBUG: Verificar qué URL se está generando
+      console.log('🔍 Verificando URL en el email...')
+      if (emailHtml.includes('vouncer-mvp.vercel.app')) {
+        console.log('❌ ERROR: Email contiene URL ANTIGUA de Vercel')
+      } else if (emailHtml.includes('www.vouncer.com')) {
+        console.log('✅ CORRECTO: Email contiene URL NUEVA de producción')
+      } else {
+        console.log('⚠️ ADVERTENCIA: No se encontró ninguna URL de Vouncer')
+      }
 
       return resend.emails.send({
         from: fromEmail,
@@ -113,18 +126,19 @@ export async function purchaseTickets(
 
     await Promise.all(emailPromises)
     console.log(`✅ ${tickets.length} emails enviados a ${email}`)
-    
+
   } catch (sendError) {
     console.error('❌ Error enviando emails:', sendError)
   }
 
   // 5. REDIRECCIÓN
   const ticketIds = tickets.map((t) => t.id).join(',')
+  // La redirección aquí es relativa, así que funcionará bien en vouncer.com
   redirect(`/success?ids=${ticketIds}&email=${encodeURIComponent(email)}`)
 }
 
 // --- FUNCIÓN DE VALIDACIÓN (SCAN) ---
-// (Esta parte NO CAMBIA, se queda igual)
+// Se mantiene igual
 type ValidateTicketResult =
   | { success: false; message: string }
   | { success: true; message: string; data: { eventTitle: string | null; email: string | null } }
@@ -150,10 +164,10 @@ export async function validateTicket(qrToken: string): Promise<ValidateTicketRes
   if (ticket.status === 'used') {
     const when = ticket.validated_at
       ? new Date(ticket.validated_at).toLocaleString('es-ES', {
-          timeZone: 'Europe/Madrid',
-          hour: '2-digit',
-          minute: '2-digit'
-        })
+        timeZone: 'Europe/Madrid',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
       : 'antes'
     return { success: false, message: `Ticket YA USADO (${when}) ⚠️` }
   }
