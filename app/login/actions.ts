@@ -22,7 +22,7 @@ export async function login(formData: FormData) {
     redirect('/login?error=true')
   }
 
-  // SI FUNCIONA: Entramos al escáner
+  // SI FUNCIONA: Entramos al dashboard de eventos
   revalidatePath('/', 'layout')
-  redirect('/admin/scan')
+  redirect('/admin/events')
 }

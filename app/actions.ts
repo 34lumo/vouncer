@@ -86,7 +86,7 @@ export async function purchaseTickets(
   const tickets = (insertedTickets ?? []) as InsertedTicket[]
 
   // ⚠️ OJO: Usa aquí el correo que prefieras (hola, contact, soporte...)
-  const fromEmail = 'Vouncer <hola@vouncer.com>'
+  const fromEmail = 'Vouncer <entradas@vouncer.com>'
 
   try {
     const emailPromises = tickets.map(async (t) => {

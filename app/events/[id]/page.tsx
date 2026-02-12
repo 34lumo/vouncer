@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowLeft, CalendarDays, Clock, MapPin, Lock, Ticket, CheckCircle2 } from 'lucide-react'
 
 // Forzamos que la página sea dinámica
@@ -14,7 +15,7 @@ export default async function EventDetailPage({ params }: PageProps) {
   const { id } = await params
   const supabase = await createClient()
 
-  // Consulta a Supabase
+  // Consulta a Supabase - incluye image_url
   const { data: event, error } = await supabase
     .from('events')
     .select('*, venues(*)')
@@ -28,7 +29,7 @@ export default async function EventDetailPage({ params }: PageProps) {
   // Preparación de datos
   const venue = event.venues as { name: string; city: string } | null
   const locationName = venue ? `${venue.name}, ${venue.city}` : 'Ubicación secreta'
-  
+
   const eventDate = event.event_date ? new Date(event.event_date) : null
   const dateStr = eventDate
     ? eventDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -37,13 +38,13 @@ export default async function EventDetailPage({ params }: PageProps) {
     ? eventDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
     : '--:--'
 
-  const priceFormatted = event.price 
+  const priceFormatted = event.price
     ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(event.price)
     : 'Gratis'
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-sky-500/30 pb-32 lg:pb-0">
-      
+
       {/* --- 1. NAVBAR LIMPIO (Sin Logo, solo botón Volver) --- */}
       <nav className="sticky top-0 z-40 border-b border-white/[0.06] bg-black/80 backdrop-blur-xl h-16 flex items-center px-6">
         <Link
@@ -62,7 +63,7 @@ export default async function EventDetailPage({ params }: PageProps) {
       </div>
 
       <main className="relative z-10 mx-auto max-w-6xl px-6 py-12">
-        
+
         {/* --- 2. HEADER DEL EVENTO --- */}
         <div className="mb-12 flex flex-col gap-6 md:items-start">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 backdrop-blur-md">
@@ -95,24 +96,38 @@ export default async function EventDetailPage({ params }: PageProps) {
 
         {/* --- 3. LAYOUT PRINCIPAL --- */}
         <div className="grid gap-12 lg:grid-cols-[1fr_380px]">
-          
+
           {/* COLUMNA IZQUIERDA: Info */}
           <div className="space-y-10">
-            {/* Imagen Principal (Ticket Icono Placeholder) */}
+            {/* Imagen Principal del Evento */}
             <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-zinc-900 group">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
-              <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:scale-105 transition-transform duration-700">
-                <Ticket className="w-32 h-32 text-white" />
-              </div>
+              {event.image_url ? (
+                <>
+                  <Image
+                    src={event.image_url}
+                    alt={event.title || 'Event poster'}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-700"
+                    sizes="(max-width: 1024px) 100vw, 66vw"
+                    priority
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent z-10" />
+                </>
+              ) : (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:scale-105 transition-transform duration-700">
+                    <Ticket className="w-32 h-32 text-white" />
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Descripción */}
             <div className="prose prose-invert max-w-none">
               <h3 className="text-2xl font-bold text-white mb-4">Sobre el evento</h3>
               <p className="text-zinc-400 leading-relaxed text-lg">
-                Vive la experiencia definitiva en <strong>{locationName}</strong>. 
-                Una noche diseñada para los amantes de la buena música y el ambiente exclusivo. 
-                Tu entrada incluye acceso preferente con Vouncer.
+                {event.description || `Vive la experiencia definitiva en ${locationName}. Una noche diseñada para los amantes de la buena música y el ambiente exclusivo. Tu entrada incluye acceso preferente con Vouncer.`}
               </p>
             </div>
           </div>
@@ -120,7 +135,7 @@ export default async function EventDetailPage({ params }: PageProps) {
           {/* COLUMNA DERECHA: Ticket Box (Desktop Only) */}
           <div className="hidden lg:block">
             <div className="sticky top-24 flex flex-col gap-6 rounded-2xl border border-white/10 bg-zinc-900/60 p-6 backdrop-blur-xl shadow-2xl shadow-black/50">
-              
+
               {/* Precio */}
               <div className="flex flex-col gap-1">
                 <span className="text-sm text-zinc-500 font-medium uppercase tracking-wide">Precio Entrada</span>
