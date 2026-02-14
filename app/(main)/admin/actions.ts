@@ -177,6 +177,7 @@ export async function updateEvent(formData: FormData) {
     const priceInput = formData.get('price') as string
     const totalTicketsInput = formData.get('total_tickets') as string
     const imageFile = formData.get('event_image') as File | null
+    const imageDeletedFlag = formData.get('image_deleted') as string
 
     if (!eventId) {
         throw new Error('Event ID is required')
@@ -237,9 +238,10 @@ export async function updateEvent(formData: FormData) {
             throw new Error('You do not have permission to edit this event.')
         }
 
-        // 📸 HANDLE IMAGE UPDATE (if new file provided)
+        // 📸 HANDLE IMAGE UPDATE
         let imageUrl: string | null = existingEvent.image_url
 
+        // Case 1: User uploaded a new image
         if (imageFile && imageFile.size > 0) {
             try {
                 // Generate unique filename
@@ -283,6 +285,24 @@ export async function updateEvent(formData: FormData) {
                 throw new Error('Failed to update image. Please try again.')
             }
         }
+        // Case 2: User explicitly deleted the image (clicked X button)
+        else if (imageDeletedFlag === 'true') {
+            console.log('🗑️ User requested image deletion')
+
+            // Delete old image from storage if it exists
+            if (existingEvent.image_url) {
+                const oldPathToDelete = existingEvent.image_url.split('/event-images/')[1]
+                if (oldPathToDelete) {
+                    await supabase.storage.from('event-images').remove([oldPathToDelete])
+                    console.log('🗑️ Deleted image from storage:', oldPathToDelete)
+                }
+            }
+
+            // Set image_url to null in database
+            imageUrl = null
+        }
+        // Case 3: No changes to image (keep existing)
+        // imageUrl remains as existingEvent.image_url
 
         // Update the event
         const { error: updateError } = await supabase

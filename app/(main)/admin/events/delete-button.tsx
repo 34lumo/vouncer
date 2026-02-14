@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react'
 import { Trash2 } from 'lucide-react'
-import { deleteEvent } from '@/app/admin/actions'
+import { deleteEvent } from '@/app/(main)/admin/actions'
 
 interface DeleteButtonProps {
     eventId: string

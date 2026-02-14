@@ -2,21 +2,9 @@
 
 import { useState } from 'react'
 import { useFormStatus } from 'react-dom'
-import { updateEvent } from '@/app/admin/actions'
+import { createEvent } from '@/app/(main)/admin/actions'
 import { Calendar, Clock, DollarSign, Ticket, FileText, AlignLeft, Image as ImageIcon, X } from 'lucide-react'
 import Image from 'next/image'
-
-interface EditEventFormProps {
-    event: {
-        id: string
-        title: string
-        description: string
-        event_date: string
-        price: number
-        total_tickets: number
-        image_url: string | null
-    }
-}
 
 function SubmitButton() {
     const { pending } = useFormStatus()
@@ -30,26 +18,20 @@ function SubmitButton() {
             {pending ? (
                 <>
                     <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                    Updating Event...
+                    Creating Event...
                 </>
             ) : (
-                'Update Event'
+                'Create Event'
             )}
         </button>
     )
 }
 
-export default function EditEventForm({ event }: EditEventFormProps) {
-    const [imagePreview, setImagePreview] = useState<string | null>(event.image_url)
-    const [newImageSelected, setNewImageSelected] = useState(false)
+export default function NewEventPage() {
+    const [imagePreview, setImagePreview] = useState<string | null>(null)
     const [fileName, setFileName] = useState<string>('')
 
-    // Parse the event date
-    const eventDate = new Date(event.event_date)
-    const dateValue = eventDate.toISOString().split('T')[0]
-    const timeValue = eventDate.toTimeString().slice(0, 5)
-
-    // Get current date for min attribute
+    // Get current date and time for min attribute
     const now = new Date()
     const minDate = now.toISOString().split('T')[0]
 
@@ -57,7 +39,6 @@ export default function EditEventForm({ event }: EditEventFormProps) {
         const file = e.target.files?.[0]
         if (file) {
             setFileName(file.name)
-            setNewImageSelected(true)
             const reader = new FileReader()
             reader.onloadend = () => {
                 setImagePreview(reader.result as string)
@@ -67,8 +48,7 @@ export default function EditEventForm({ event }: EditEventFormProps) {
     }
 
     const clearImage = () => {
-        setImagePreview(event.image_url)
-        setNewImageSelected(false)
+        setImagePreview(null)
         setFileName('')
         const fileInput = document.getElementById('event_image') as HTMLInputElement
         if (fileInput) fileInput.value = ''
@@ -79,20 +59,18 @@ export default function EditEventForm({ event }: EditEventFormProps) {
             <div className="max-w-2xl mx-auto">
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold mb-2">Edit Event</h1>
-                    <p className="text-zinc-400">Update event details. Leave image unchanged if you don't upload a new one.</p>
+                    <h1 className="text-3xl font-bold mb-2">Create New Event</h1>
+                    <p className="text-zinc-400">Fill in the event details. Your venue will be assigned automatically.</p>
                 </div>
 
                 {/* Form */}
-                <form action={updateEvent} className="space-y-6">
-                    {/* Hidden event ID */}
-                    <input type="hidden" name="event_id" value={event.id} />
+                <form action={createEvent} className="space-y-6">
 
                     {/* Event Image Upload */}
                     <div>
                         <label htmlFor="event_image" className="block text-sm font-medium mb-2 flex items-center gap-2">
                             <ImageIcon className="w-4 h-4 text-zinc-400" />
-                            Event Poster {newImageSelected && <span className="text-sky-400 text-xs">(New image selected)</span>}
+                            Event Poster
                         </label>
 
                         {imagePreview ? (
@@ -111,9 +89,7 @@ export default function EditEventForm({ event }: EditEventFormProps) {
                                     <X className="w-4 h-4" />
                                 </button>
                                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-                                    <p className="text-xs text-zinc-300 truncate">
-                                        {newImageSelected ? fileName : 'Current image (click X to change)'}
-                                    </p>
+                                    <p className="text-xs text-zinc-300 truncate">{fileName}</p>
                                 </div>
                             </div>
                         ) : (
@@ -122,7 +98,7 @@ export default function EditEventForm({ event }: EditEventFormProps) {
                                 className="flex flex-col items-center justify-center w-full h-64 bg-zinc-900 border-2 border-dashed border-zinc-800 rounded-lg cursor-pointer hover:border-zinc-700 hover:bg-zinc-900/50 transition-all"
                             >
                                 <ImageIcon className="w-12 h-12 text-zinc-600 mb-3" />
-                                <p className="text-sm text-zinc-400 mb-1">Click to upload new poster</p>
+                                <p className="text-sm text-zinc-400 mb-1">Click to upload event poster</p>
                                 <p className="text-xs text-zinc-600">PNG, JPG, WEBP up to 10MB</p>
                             </label>
                         )}
@@ -135,7 +111,7 @@ export default function EditEventForm({ event }: EditEventFormProps) {
                             onChange={handleImageChange}
                             className="hidden"
                         />
-                        <p className="text-xs text-zinc-500 mt-1">Optional - Leave unchanged if you don't select a new file</p>
+                        <p className="text-xs text-zinc-500 mt-1">Optional - Recommended size: 1200x630px</p>
                     </div>
 
                     {/* Title */}
@@ -151,7 +127,6 @@ export default function EditEventForm({ event }: EditEventFormProps) {
                             required
                             minLength={3}
                             maxLength={200}
-                            defaultValue={event.title}
                             placeholder="e.g., Summer Music Festival"
                             className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                         />
@@ -170,7 +145,6 @@ export default function EditEventForm({ event }: EditEventFormProps) {
                             minLength={10}
                             maxLength={1000}
                             rows={4}
-                            defaultValue={event.description}
                             placeholder="Describe your event..."
                             className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20 resize-none"
                         />
@@ -189,7 +163,6 @@ export default function EditEventForm({ event }: EditEventFormProps) {
                                 name="date"
                                 required
                                 min={minDate}
-                                defaultValue={dateValue}
                                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                             />
                         </div>
@@ -204,7 +177,6 @@ export default function EditEventForm({ event }: EditEventFormProps) {
                                 id="time"
                                 name="time"
                                 required
-                                defaultValue={timeValue}
                                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                             />
                         </div>
@@ -225,7 +197,6 @@ export default function EditEventForm({ event }: EditEventFormProps) {
                                 min="0"
                                 max="10000000"
                                 step="1"
-                                defaultValue={event.price}
                                 placeholder="0"
                                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                             />
@@ -245,7 +216,6 @@ export default function EditEventForm({ event }: EditEventFormProps) {
                                 min="1"
                                 max="100000"
                                 step="1"
-                                defaultValue={event.total_tickets}
                                 placeholder="100"
                                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                             />
@@ -254,16 +224,8 @@ export default function EditEventForm({ event }: EditEventFormProps) {
                     </div>
 
                     {/* Submit Button */}
-                    <div className="pt-4 flex gap-4">
-                        <a
-                            href="/admin/events"
-                            className="flex-1 bg-zinc-800 text-white font-semibold py-3 px-6 rounded-xl hover:bg-zinc-700 transition-all text-center"
-                        >
-                            Cancel
-                        </a>
-                        <div className="flex-1">
-                            <SubmitButton />
-                        </div>
+                    <div className="pt-4">
+                        <SubmitButton />
                     </div>
                 </form>
             </div>

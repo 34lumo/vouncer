@@ -7,7 +7,12 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'vqacmibrsneptaljprez.supabase.co', // 👈 Tu dominio de Supabase
         port: '',
-        pathname: '/storage/v1/object/public/**', // Permitir solo la carpeta pública
+        pathname: '/storage/v1/object/public/**',
+      },
+      // 👇 AÑADE ESTO AQUÍ:
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com', // 👈 Permitir imágenes de Unsplash
       },
     ],
   },
