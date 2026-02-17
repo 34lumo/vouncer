@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { LayoutTextFlip } from "@/components/ui/layout-text-flip"
 import { EventsList } from '@/components/events-list'
@@ -21,6 +22,7 @@ export default function Home() {
             alt="Background Vouncer"
             fill
             priority
+            quality={60}
             className="object-cover opacity-50 mix-blend-luminosity"
           />
         </div>
@@ -39,6 +41,19 @@ export default function Home() {
         {/* HERO SECTION - Renders immediately */}
         <section className="relative pt-40 pb-20 md:pt-52 md:pb-32 px-6 flex flex-col items-center justify-center min-h-[70vh]">
           <div className="max-w-6xl mx-auto text-center space-y-10">
+
+            {/* B2B CTA Pill Badge */}
+            <Link
+              href="/business"
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 backdrop-blur-md group cursor-pointer animate-fade-in"
+            >
+              <span className="text-xs font-medium text-zinc-400 group-hover:text-white transition-colors">
+                ¿Tienes un venue?
+              </span>
+              <span className="text-xs text-zinc-500 group-hover:text-white transition-colors">
+                Usa Vouncer<span className="inline-block transition-transform group-hover:translate-x-0.5"></span>
+              </span>
+            </Link>
 
             {/* Texto Flip */}
             <div className="py-2">

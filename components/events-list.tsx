@@ -62,6 +62,7 @@ export async function EventsList() {
                                         src={imageUrl}
                                         alt={event.title || 'Event'}
                                         fill
+                                        quality={65}
                                         className="object-cover group-hover:scale-110 transition-transform duration-700"
                                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                         loading="lazy"
@@ -85,17 +86,17 @@ export async function EventsList() {
                             </h3>
                             <div className="flex flex-col gap-2 text-zinc-400 text-sm mb-8 z-10">
                                 <span className="flex items-center gap-2">
-                                    <MapPin className="w-4 h-4 text-zinc-500" />
+                                    <MapPin className="w-4 h-4 text-zinc-400" />
                                     <span className="truncate">{locationText}</span>
                                 </span>
                                 <span className="flex items-center gap-2">
-                                    <CalendarDays className="w-4 h-4 text-zinc-500" />
+                                    <CalendarDays className="w-4 h-4 text-zinc-400" />
                                     <span>{time}h</span>
                                 </span>
                             </div>
                             <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between z-10 relative">
                                 <div>
-                                    <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-1">Entrada</p>
+                                    <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider mb-1">Entrada</p>
                                     <p className="text-xl font-bold text-white">{formatPrice(event.price)}</p>
                                 </div>
                                 <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-sky-500 group-hover:border-sky-500 transition-all duration-300 group-hover:scale-110">

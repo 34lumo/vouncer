@@ -22,7 +22,33 @@ export async function login(formData: FormData) {
     redirect('/login?error=true')
   }
 
-  // SI FUNCIONA: Entramos al dashboard de eventos
+  // SI FUNCIONA: Fetch user role and redirect accordingly
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (user) {
+    // Fetch user profile to get role
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    const role = profile?.role || 'user'
+
+    // Direct redirect based on role (avoids layout conflicts)
+    if (role === 'bouncer') {
+      revalidatePath('/', 'layout')
+      redirect('/admin/scan')  // Bouncers go directly to scanner
+    } else if (role === 'admin' || role === 'owner') {
+      revalidatePath('/', 'layout')
+      redirect('/admin')  // Admins go to hub
+    } else {
+      revalidatePath('/', 'layout')
+      redirect('/')  // Regular users go home
+    }
+  }
+
+  // Fallback
   revalidatePath('/', 'layout')
-  redirect('/admin/events')
+  redirect('/admin')
 }

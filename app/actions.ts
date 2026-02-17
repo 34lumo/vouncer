@@ -5,8 +5,16 @@ import { redirect } from 'next/navigation'
 import { Resend } from 'resend'
 import { render } from '@react-email/render'
 import TicketEmail from './emails/ticket-email'
+import DemoRequestEmail from './emails/demo-request-email'
 
 // --- INTERFACES ---
+interface DemoRequestData {
+  name: string
+  clubName: string
+  email: string
+  phone: string
+}
+
 interface TicketData {
   id: string
   status: string
@@ -191,4 +199,46 @@ export async function validateTicket(qrToken: string): Promise<ValidateTicketRes
   }
 
   return { success: false, message: 'Estado inválido.' }
+}
+
+// --- FUNCIÓN DE SOLICITUD DE DEMO ---
+export async function submitDemoRequest(data: DemoRequestData) {
+  const resend = new Resend(process.env.RESEND_API_KEY)
+
+  try {
+    // Renderizar el email con los datos del solicitante
+    const emailHtml = await render(DemoRequestEmail({
+      name: data.name,
+      clubName: data.clubName,
+      email: data.email,
+      phone: data.phone,
+    }))
+
+    // Enviar emails a ambos destinatarios
+    const emailPromises = [
+      resend.emails.send({
+        from: 'Vouncer Business <business@vouncer.com>',
+        to: 'vouncerteam@gmail.com',
+        subject: `🎯 Nueva Solicitud de Demo - ${data.clubName}`,
+        html: emailHtml,
+        replyTo: data.email,
+      }),
+      resend.emails.send({
+        from: 'Vouncer Business <business@vouncer.com>',
+        to: 'contact@vouncer.com',
+        subject: `🎯 Nueva Solicitud de Demo - ${data.clubName}`,
+        html: emailHtml,
+        replyTo: data.email,
+      })
+    ]
+
+    await Promise.all(emailPromises)
+
+    console.log(`✅ Demo request emails sent for ${data.clubName} (${data.email})`)
+
+    return { success: true, message: 'Solicitud enviada correctamente' }
+  } catch (error) {
+    console.error('❌ Error sending demo request emails:', error)
+    return { success: false, message: 'Error al enviar la solicitud. Por favor, inténtalo de nuevo.' }
+  }
 }
