@@ -1,10 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useFormState } from 'react-dom'
 import { useFormStatus } from 'react-dom'
 import { createEvent } from '@/app/(main)/admin/actions'
+import type { State } from '@/app/(main)/admin/actions'
 import { Calendar, Clock, DollarSign, Ticket, FileText, AlignLeft, Image as ImageIcon, X } from 'lucide-react'
 import Image from 'next/image'
+import { useState } from 'react'
 
 function SubmitButton() {
     const { pending } = useFormStatus()
@@ -28,6 +30,8 @@ function SubmitButton() {
 }
 
 export default function NewEventPage() {
+    const initialState: State = { message: undefined, errors: {} }
+    const [state, formAction] = useFormState(createEvent, initialState)
     const [imagePreview, setImagePreview] = useState<string | null>(null)
     const [fileName, setFileName] = useState<string>('')
 
@@ -64,7 +68,7 @@ export default function NewEventPage() {
                 </div>
 
                 {/* Form */}
-                <form action={createEvent} className="space-y-6">
+                <form action={formAction} className="space-y-6">
 
                     {/* Event Image Upload */}
                     <div>
@@ -150,36 +154,77 @@ export default function NewEventPage() {
                         />
                     </div>
 
-                    {/* Date and Time Row */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label htmlFor="date" className="block text-sm font-medium mb-2 flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-zinc-400" />
-                                Date
-                            </label>
-                            <input
-                                type="date"
-                                id="date"
-                                name="date"
-                                required
-                                min={minDate}
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
-                            />
+                    {/* Date and Time Section */}
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label htmlFor="date" className="block text-sm font-medium mb-2 flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 text-zinc-400" />
+                                    Fecha del Evento
+                                </label>
+                                <input
+                                    type="date"
+                                    id="date"
+                                    name="date"
+                                    required
+                                    min={minDate}
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="time" className="block text-sm font-medium mb-2 flex items-center gap-2">
+                                    <Clock className="w-4 h-4 text-zinc-400" />
+                                    Hora de Inicio
+                                </label>
+                                <input
+                                    type="time"
+                                    id="time"
+                                    name="time"
+                                    required
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                                />
+                                {state.errors?.date && (
+                                    <p className="text-red-400 text-sm mt-1">{state.errors.date[0]}</p>
+                                )}
+                            </div>
                         </div>
 
+                        {/* Event End Time */}
                         <div>
-                            <label htmlFor="time" className="block text-sm font-medium mb-2 flex items-center gap-2">
+                            <label htmlFor="ends_at" className="block text-sm font-medium mb-2 flex items-center gap-2">
                                 <Clock className="w-4 h-4 text-zinc-400" />
-                                Time
+                                Fin del Evento
                             </label>
                             <input
-                                type="time"
-                                id="time"
-                                name="time"
+                                type="datetime-local"
+                                id="ends_at"
+                                name="ends_at"
                                 required
                                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                             />
+                            <p className="text-xs text-zinc-500 mt-1">Debe ser después del inicio del evento</p>
+                            {state.errors?.ends_at && (
+                                <p className="text-red-400 text-sm mt-1">{state.errors.ends_at[0]}</p>
+                            )}
                         </div>
+                    </div>
+
+                    {/* Sales End Time (Optional) */}
+                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
+                        <label htmlFor="sales_ends_at" className="block text-sm font-medium mb-2 flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-zinc-400" />
+                            Cierre de Venta (Opcional)
+                        </label>
+                        <input
+                            type="datetime-local"
+                            id="sales_ends_at"
+                            name="sales_ends_at"
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                        />
+                        <p className="text-xs text-zinc-500 mt-2">
+                            Si se deja vacío, se puede vender hasta que acabe el evento.
+                        </p>
                     </div>
 
                     {/* Price and Tickets Row */}

@@ -6,10 +6,14 @@ import { ArrowRight, CalendarDays, MapPin, Ticket } from 'lucide-react'
 export async function EventsList() {
     const supabase = await createClient()
 
-    // Optimized query: only fetch necessary fields
+    // Optimized query: JOIN with venues, fetch lifecycle data including address
+    // Filter: Show events until 12 hours AFTER they end
+    const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
+
     const { data: events, error } = await supabase
         .from('events')
-        .select('id, title, event_date, image_url, price, venues(name, city)')
+        .select('*, venues(name, city, address)')
+        .gt('ends_at', twelveHoursAgo)  // Hide events 12 hours after they finish
         .order('event_date', { ascending: true })
         .limit(6)
 
@@ -17,22 +21,27 @@ export async function EventsList() {
         if (!price) return 'Gratis'
         const numPrice = typeof price === 'string' ? parseFloat(price) : price
         if (isNaN(numPrice)) return 'Gratis'
-        return `$${Math.round(numPrice).toLocaleString('es-CO')}`
+        return new Intl.NumberFormat('es-CO', {
+            style: 'currency',
+            currency: 'COP',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        }).format(numPrice)
     }
 
     if (error) {
+        console.error('Error fetching events:', error)
         return (
-            <div className="text-center py-20 border border-red-500/20 bg-red-500/5 rounded-3xl">
-                <p className="text-red-400">Error cargando eventos: {error.message}</p>
+            <div className="text-center py-12">
+                <p className="text-zinc-400">Error loading events. Please try again later.</p>
             </div>
         )
     }
 
     if (!events || events.length === 0) {
         return (
-            <div className="text-center py-32 border-2 border-dashed border-white/5 rounded-[2rem] bg-zinc-900/20">
-                <Ticket className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-                <p className="text-zinc-400 text-lg">No hay eventos disponibles por ahora.</p>
+            <div className="text-center py-12">
+                <p className="text-zinc-400">No upcoming events at the moment. Check back soon!</p>
             </div>
         )
     }
@@ -40,20 +49,69 @@ export async function EventsList() {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {events.map((event) => {
-                const venuesArray = event.venues as { name: string; city: string }[] | null
-                const venue = venuesArray && venuesArray.length > 0 ? venuesArray[0] : null
-                const locationText = venue ? `${venue.name}, ${venue.city}` : 'Ubicación secreta'
+                // 1. Extract Venue Data safely (Handle Array or Object)
+                const rawVenue = event.venues
+                const venue = Array.isArray(rawVenue) ? rawVenue[0] : rawVenue
+
+                // 2. Calculate Location Text (Strict Priority)
+                let locationText = 'Ubicación por confirmar'
+
+                if (venue) {
+                    if (venue.address && venue.address.trim() !== '') {
+                        locationText = `${venue.name}, ${venue.address}` // Priority 1: Address
+                    } else if (venue.city) {
+                        locationText = `${venue.name}, ${venue.city}`    // Priority 2: City
+                    } else {
+                        locationText = venue.name                        // Priority 3: Name
+                    }
+                }
+
+                // Use local timezone for date formatting
                 const eventDate = event.event_date ? new Date(event.event_date) : null
-                const day = eventDate ? eventDate.toLocaleDateString('es-ES', { day: 'numeric' }) : '?'
-                const month = eventDate ? eventDate.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase().replace('.', '') : ''
-                const time = eventDate ? eventDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'
+                const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+                const day = eventDate ? new Intl.DateTimeFormat('es-ES', {
+                    day: 'numeric',
+                    timeZone: userTimeZone
+                }).format(eventDate) : '?'
+
+                const month = eventDate ? new Intl.DateTimeFormat('es-ES', {
+                    month: 'short',
+                    timeZone: userTimeZone
+                }).format(eventDate).toUpperCase().replace('.', '') : ''
+
+                const time = eventDate ? new Intl.DateTimeFormat('es-ES', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZone: userTimeZone
+                }).format(eventDate) : '--:--'
+
                 const imageUrl = (event as any).image_url
+
+                // Event lifecycle state logic - STRICT PRIORITY HIERARCHY
+                const now = new Date()
+                const totalTickets = (event as any).total_tickets || 0
+                const soldTickets = (event as any).sold_tickets || 0
+                const endsAt = (event as any).ends_at ? new Date((event as any).ends_at) : null
+                const salesEndsAt = (event as any).sales_ends_at ? new Date((event as any).sales_ends_at) : null
+
+                // PRIORITY 1: SOLD OUT (sold_tickets >= total_tickets)
+                const isSoldOut = soldTickets >= totalTickets
+
+                // PRIORITY 2: FINISHED (now > ends_at)
+                const isFinished = !isSoldOut && endsAt && now > endsAt
+
+                // PRIORITY 3: SALES CLOSED (sales_ends_at exists AND now > sales_ends_at)
+                const isSalesClosed = !isSoldOut && !isFinished && salesEndsAt && now > salesEndsAt
+
+                // PRIORITY 4: ACTIVE (default)
+                const isAvailable = !isSoldOut && !isFinished && !isSalesClosed
 
                 return (
                     <Link
                         key={event.id}
                         href={`/events/${event.id}`}
-                        className="group relative flex flex-col bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:border-sky-500/30"
+                        className={`group relative flex flex-col bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:border-sky-500/30 ${!isAvailable ? 'opacity-75 pointer-events-none' : ''}`}
                     >
                         <div className="h-64 bg-gradient-to-b from-zinc-800 via-zinc-900/80 to-black/50 w-full relative overflow-hidden">
                             {imageUrl ? (
@@ -63,7 +121,7 @@ export async function EventsList() {
                                         alt={event.title || 'Event'}
                                         fill
                                         quality={65}
-                                        className="object-cover group-hover:scale-110 transition-transform duration-700"
+                                        className={`object-cover group-hover:scale-110 transition-transform duration-700 ${!isAvailable ? 'opacity-80 grayscale' : ''}`}
                                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                         loading="lazy"
                                     />
@@ -78,6 +136,28 @@ export async function EventsList() {
                                 <span className="block text-2xl font-extrabold text-white leading-none">{day}</span>
                                 <span className="block text-[11px] text-sky-300 font-bold tracking-wider mt-1">{month}</span>
                             </div>
+
+                            {/* Status Badges - STRICT PRIORITY HIERARCHY */}
+                            {/* PRIORITY 1: SOLD OUT - Red Badge */}
+                            {isSoldOut && (
+                                <div className="absolute top-5 right-5 bg-red-600 text-white font-bold py-2 px-4 rounded-full text-center uppercase tracking-wide z-10">
+                                    <span className="text-xs">SOLD OUT</span>
+                                </div>
+                            )}
+
+                            {/* PRIORITY 2: FINISHED - Black/Dark Zinc Badge */}
+                            {isFinished && (
+                                <div className="absolute top-5 right-5 bg-zinc-900 text-zinc-400 font-bold py-2 px-4 rounded-full text-center uppercase tracking-wide z-10">
+                                    <span className="text-xs">FINALIZADO</span>
+                                </div>
+                            )}
+
+                            {/* PRIORITY 3: SALES CLOSED - Gray/Zinc Badge */}
+                            {isSalesClosed && (
+                                <div className="absolute top-5 right-5 bg-zinc-800 text-zinc-400 font-bold py-2 px-4 rounded-full text-center uppercase tracking-wide z-10">
+                                    <span className="text-xs">VENTA CERRADA</span>
+                                </div>
+                            )}
                         </div>
 
                         <div className="p-8 flex flex-col flex-grow relative">
@@ -96,12 +176,20 @@ export async function EventsList() {
                             </div>
                             <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between z-10 relative">
                                 <div>
-                                    <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider mb-1">Entrada</p>
+                                    <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider mb-1">
+                                        {isSoldOut ? 'Sold Out' : isSalesClosed ? 'Venta Cerrada' : isFinished ? 'Finalizado' : 'Entrada'}
+                                    </p>
                                     <p className="text-xl font-bold text-white">{formatPrice(event.price)}</p>
                                 </div>
-                                <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-sky-500 group-hover:border-sky-500 transition-all duration-300 group-hover:scale-110">
-                                    <ArrowRight className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
-                                </div>
+                                {isAvailable ? (
+                                    <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-sky-500 group-hover:border-sky-500 transition-all duration-300 group-hover:scale-110">
+                                        <ArrowRight className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
+                                    </div>
+                                ) : (
+                                    <div className="w-12 h-12 rounded-full bg-zinc-800/50 border border-zinc-700/50 flex items-center justify-center">
+                                        <ArrowRight className="w-5 h-5 text-zinc-600" />
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </Link>

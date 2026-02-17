@@ -9,10 +9,10 @@ export async function Navbar() {
   const { data: { user } } = await supabase.auth.getUser()
 
   return (
-    <nav className="fixed top-0 inset-x-0 z-50 h-24 flex items-center justify-between px-6 bg-black/60 backdrop-blur-xl border-b border-white/5 transition-all duration-300">
+    <nav className="sticky top-0 z-50 w-full h-24 flex items-center justify-between px-6 bg-black/50 backdrop-blur-md border-b border-white/10 transition-all duration-300 relative">
 
-      {/* Logo - Left Side */}
-      <Link href="/" className="relative group cursor-pointer">
+      {/* Logo - Centered */}
+      <Link href="/" className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 group cursor-pointer">
         {/* Aura de luz trasera (Glow Azul) */}
         <div className="absolute -inset-4 bg-sky-500/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
@@ -29,7 +29,7 @@ export async function Navbar() {
 
       {/* User Profile - Right Side */}
       {user && (
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 ml-auto">
           <UserNav email={user.email || 'user@vouncer.com'} />
         </div>
       )}

@@ -12,20 +12,20 @@ export default async function LoginPage(props: {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-black p-4">
       <div className="w-full max-w-md bg-[#111] border border-[#333] rounded-xl p-8 shadow-2xl">
-        
+
         {/* Logo Centrado */}
         <div className="flex justify-center mb-8">
-          <Image 
-            src="/logo.png" 
-            alt="Vouncer" 
-            width={180} 
-            height={60} 
+          <Image
+            src="/logo.png"
+            alt="Vouncer"
+            width={180}
+            height={60}
             className="object-contain"
           />
         </div>
 
         <h2 className="text-2xl font-bold text-white text-center mb-6">
-          Acceso Porteros
+          Acceso Vouncer
         </h2>
 
         {/* --- MENSAJE DE ERROR (Solo sale si la contraseña falló) --- */}
@@ -66,7 +66,7 @@ export default async function LoginPage(props: {
             type="submit"
             className="w-full bg-white text-black font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors mt-4"
           >
-            Entrar al Club 
+            Entrar al Club
           </button>
         </form>
       </div>

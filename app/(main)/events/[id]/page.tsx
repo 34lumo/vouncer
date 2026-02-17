@@ -15,10 +15,10 @@ export default async function EventDetailPage({ params }: PageProps) {
   const { id } = await params
   const supabase = await createClient()
 
-  // Consulta a Supabase - incluye image_url
+  // Consulta a Supabase - incluye image_url y address
   const { data: event, error } = await supabase
     .from('events')
-    .select('*, venues(*)')
+    .select('*, venues(name, city, address)')
     .eq('id', id)
     .single()
 
@@ -27,8 +27,26 @@ export default async function EventDetailPage({ params }: PageProps) {
   }
 
   // Preparación de datos
-  const venue = event.venues as { name: string; city: string } | null
-  const locationName = venue ? `${venue.name}, ${venue.city}` : 'Ubicación secreta'
+  const venue = event.venues as { name: string; city: string; address?: string | null } | null
+
+  // Location display with priority: address > city > fallback
+  let locationName = 'Ubicación por confirmar'
+  let fullAddress = ''
+  if (venue) {
+    if (venue.address) {
+      locationName = `${venue.name}, ${venue.address}`
+      fullAddress = `${venue.name}, ${venue.address}, ${venue.city}`
+    } else if (venue.city) {
+      locationName = `${venue.name}, ${venue.city}`
+      fullAddress = `${venue.name}, ${venue.city}`
+    } else {
+      locationName = venue.name
+      fullAddress = venue.name
+    }
+  }
+
+  // Google Maps URL
+  const mapsUrl = fullAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}` : null
 
   const eventDate = event.event_date ? new Date(event.event_date) : null
   const dateStr = eventDate
@@ -89,7 +107,18 @@ export default async function EventDetailPage({ params }: PageProps) {
             </div>
             <div className="flex items-center gap-2">
               <MapPin className="w-5 h-5 text-sky-400" />
-              <span>{locationName}</span>
+              {mapsUrl ? (
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-sky-400 transition-colors underline decoration-dotted underline-offset-4"
+                >
+                  {locationName}
+                </a>
+              ) : (
+                <span>{locationName}</span>
+              )}
             </div>
           </div>
         </div>

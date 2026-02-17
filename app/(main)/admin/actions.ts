@@ -3,44 +3,116 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { z } from 'zod'
 
-export async function createEvent(formData: FormData) {
+// State type for form validation
+export type State = {
+    errors?: {
+        title?: string[]
+        description?: string[]
+        date?: string[]
+        time?: string[]
+        ends_at?: string[]
+        price?: string[]
+        total_tickets?: string[]
+        sales_ends_at?: string[]
+        event_image?: string[]
+        _form?: string[]
+    }
+    message?: string
+}
+
+// Zod schema for event creation with all validations
+const CreateEventSchema = z.object({
+    title: z.string().min(1, 'El título es requerido'),
+    description: z.string().min(10, 'La descripción debe tener al menos 10 caracteres'),
+    date: z.string().min(1, 'La fecha es requerida'),
+    time: z.string().min(1, 'La hora es requerida'),
+    ends_at: z.string().min(1, 'La fecha de fin es requerida'),
+    price: z.string().transform((val) => {
+        const num = parseInt(val, 10)
+        if (isNaN(num) || num < 0) {
+            throw new Error('El precio debe ser un número positivo. Eventos gratis deben usar 0.')
+        }
+        return num
+    }),
+    total_tickets: z.string().transform((val) => {
+        const num = parseInt(val, 10)
+        if (isNaN(num) || num <= 0) {
+            throw new Error('El total de tickets debe ser al menos 1.')
+        }
+        return num
+    }),
+    sales_ends_at: z.string().optional().nullable(),
+})
+    .refine((data) => {
+        // Validate event date is not in the past
+        const eventDate = new Date(`${data.date}T${data.time}`)
+        return eventDate > new Date()
+    }, {
+        message: 'La fecha del evento no puede ser en el pasado.',
+        path: ['date'],
+    })
+    .refine((data) => {
+        // Validate ends_at is after event start
+        const eventDate = new Date(`${data.date}T${data.time}`)
+        const endsAt = new Date(data.ends_at)
+        return endsAt > eventDate
+    }, {
+        message: 'La fecha de fin debe ser posterior al inicio del evento.',
+        path: ['ends_at'],
+    })
+    .refine((data) => {
+        // Validate sales_ends_at is not in the past (if provided)
+        if (!data.sales_ends_at) return true
+        const salesEndsAt = new Date(data.sales_ends_at)
+        return salesEndsAt > new Date()
+    }, {
+        message: 'La fecha de cierre de venta no puede ser en el pasado.',
+        path: ['sales_ends_at'],
+    })
+
+export async function createEvent(prevState: State | undefined, formData: FormData): Promise<State> {
     const supabase = await createClient()
 
-    // Extract form data (no venue fields anymore)
-    const title = formData.get('title') as string
-    const description = formData.get('description') as string
-    const date = formData.get('date') as string
-    const time = formData.get('time') as string
-    const priceInput = formData.get('price') as string
-    const totalTicketsInput = formData.get('total_tickets') as string
+    // Extract and validate form data using Zod
+    const validatedFields = CreateEventSchema.safeParse({
+        title: formData.get('title'),
+        description: formData.get('description'),
+        date: formData.get('date'),
+        time: formData.get('time'),
+        ends_at: formData.get('ends_at'),
+        price: formData.get('price'),
+        total_tickets: formData.get('total_tickets'),
+        sales_ends_at: formData.get('sales_ends_at') || null,
+    })
+
+    // If validation fails, return errors
+    if (!validatedFields.success) {
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+        }
+    }
+
+    // Extract validated data
+    const { title, description, date, time, ends_at, price, total_tickets, sales_ends_at } = validatedFields.data
     const imageFile = formData.get('event_image') as File | null
 
-    // Parse as integers (price is int4 in database)
-    const price = parseInt(priceInput, 10)
-    const totalTickets = parseInt(totalTicketsInput, 10)
-
-    // 🛡️ VALIDATION 1: Negative or Zero Prices
-    if (isNaN(price) || price < 0) {
-        throw new Error('Price must be a positive number. Free events should use 0.')
-    }
-
-    // 🛡️ VALIDATION 2: Negative or Zero Tickets
-    if (isNaN(totalTickets) || totalTickets <= 0) {
-        throw new Error('Total tickets must be at least 1.')
-    }
-
-    // 🛡️ VALIDATION 3: Past Event Dates
+    // Calculate ISO dates
     const eventDate = new Date(`${date}T${time}`)
+    const eventDateISO = eventDate.toISOString()
+    const endsAt = new Date(ends_at)
+    const endsAtISO = endsAt.toISOString()
+
+    let salesEndsAtISO: string | null = null
+    if (sales_ends_at) {
+        const salesEndsAt = new Date(sales_ends_at)
+        salesEndsAtISO = salesEndsAt.toISOString()
+    }
+
     const now = new Date()
 
-    if (eventDate < now) {
-        throw new Error('Event date cannot be in the past. Check your date and time.')
-    }
-
-    const eventDateISO = eventDate.toISOString()
-
-    // 🛡️ VALIDATION 4: Duplicate Event Prevention (Idempotency)
+    // 🛡️ VALIDATION: Duplicate Event Prevention (Idempotency)
     const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString()
     const { data: recentDuplicate } = await supabase
         .from('events')
@@ -129,9 +201,12 @@ export async function createEvent(formData: FormData) {
                 title,
                 description,
                 event_date: eventDateISO,
+                ends_at: endsAtISO, // Event end time
                 price, // int4
-                total_tickets: totalTickets, // int4
-                stock: totalTickets, // 🔥 CRITICAL: stock must equal total_tickets for new events
+                total_tickets: total_tickets, // int4
+                stock: total_tickets, // 🔥 CRITICAL: stock must equal total_tickets for new events
+                sold_tickets: 0, // Initialize sold tickets to 0
+                sales_ends_at: salesEndsAtISO, // Optional sales deadline
                 venue_id: venueId,
                 status: 'active',
                 image_url: imageUrl, // 📸 Add image URL
