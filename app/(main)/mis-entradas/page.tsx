@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import QRCode from 'react-qr-code'
 import { Ticket, Calendar, MapPin, ArrowLeft, AlertTriangle } from 'lucide-react'
@@ -31,8 +31,13 @@ export default async function MisEntradasPage({
 
     const idsArray = ids.split(',').filter(Boolean)
 
-    const supabase = await createClient()
-    const { data: tickets } = await supabase
+    // Use Admin Client (Service Role) to bypass RLS.
+    // The unguessable UUIDs in the magic link act as auth — no account needed.
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    const { data: tickets } = await supabaseAdmin
         .from('tickets')
         .select(`
             id,
