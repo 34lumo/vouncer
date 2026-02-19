@@ -10,6 +10,8 @@ type ValidateSuccess = {
   data: {
     eventTitle: string | null
     email: string | null
+    ticketTypeName: string
+    drinksIncluded: number
   }
 }
 
@@ -61,8 +63,8 @@ export default function ScanPage() {
   const overlayColor = isSuccess
     ? 'bg-green-600/95'
     : isError
-    ? 'bg-red-700/95'
-    : 'bg-black/80'
+      ? 'bg-red-700/95'
+      : 'bg-black/80'
 
   const showOverlay = isValidating || !!result
 
@@ -101,7 +103,7 @@ export default function ScanPage() {
           {/* Overlay de resultado / validación */}
           {showOverlay && (
             <div className={`absolute inset-0 flex items-center justify-center ${overlayColor}`}>
-              <div className="px-6 text-center space-y-4">
+              <div className="w-full max-w-sm px-5 text-center space-y-3">
                 {isValidating && (
                   <>
                     <p className="text-sm uppercase tracking-[0.18em] text-gray-200">
@@ -113,22 +115,67 @@ export default function ScanPage() {
 
                 {!isValidating && result && (
                   <>
-                    <p className="text-sm uppercase tracking-[0.18em] text-gray-100">
-                      {isSuccess ? 'Ticket válido' : 'Ticket inválido'}
+                    {/* ── STATUS HEADER ─────────────────────────── */}
+                    <p className="text-sm uppercase tracking-[0.2em] text-white/80">
+                      {isSuccess ? '✅ Ticket válido' : '❌ Acceso denegado'}
                     </p>
-                    <p className="text-3xl font-extrabold">
-                      {isSuccess ? 'ADELANTE' : 'ACCESO DENEGADO'}
-                    </p>
-                    <p className="text-lg font-medium">
-                      {result.message}
+                    <p className="text-4xl font-black tracking-tight text-white">
+                      {isSuccess ? 'ADELANTE' : 'DENEGADO'}
                     </p>
 
-                    {isSuccess && result.data?.eventTitle && (
-                      <p className="text-sm text-gray-100">
-                        Evento:{' '}
-                        <span className="font-semibold">
-                          {result.data.eventTitle}
-                        </span>
+                    {/* ── SUCCESS DETAILS ───────────────────────── */}
+                    {isSuccess && result.data && (
+                      <div className="space-y-3 mt-2">
+
+                        {/* Customer name */}
+                        <p className="text-xl font-bold text-white">
+                          {result.message}
+                        </p>
+
+                        {/* Event */}
+                        {result.data.eventTitle && (
+                          <p className="text-sm text-white/70">
+                            {result.data.eventTitle}
+                          </p>
+                        )}
+
+                        {/* ── TICKET TYPE — large & unmissable ─── */}
+                        <div className="rounded-xl bg-white/15 border border-white/30 px-4 py-3">
+                          <p className="text-xs uppercase tracking-widest text-white/60 mb-0.5">
+                            🎫 Tipo de Entrada
+                          </p>
+                          <p className="text-3xl font-black text-white leading-tight">
+                            {result.data.ticketTypeName.toUpperCase()}
+                          </p>
+                        </div>
+
+                        {/* ── DRINKS — CRITICAL: solid colour, max size ── */}
+                        {result.data.drinksIncluded > 0 ? (
+                          <div className="rounded-xl bg-lime-400 px-4 py-4 shadow-[0_0_30px_rgba(163,230,53,0.6)]">
+                            <p className="text-xs uppercase tracking-widest text-black/60 font-bold mb-1">
+                              Incluye consumiciones
+                            </p>
+                            <p className="text-5xl font-black text-black leading-none">
+                              🍹 ×{result.data.drinksIncluded}
+                            </p>
+                            <p className="text-lg font-bold text-black mt-1">
+                              {result.data.drinksIncluded === 1
+                                ? '1 CONSUMICIÓN'
+                                : `${result.data.drinksIncluded} CONSUMICIONES`}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-white/50">
+                            Sin consumición incluida
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── FAILURE MESSAGE ───────────────────────── */}
+                    {!isSuccess && (
+                      <p className="text-xl font-semibold text-white/90 mt-2">
+                        {result.message}
                       </p>
                     )}
                   </>

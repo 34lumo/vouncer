@@ -6,16 +6,26 @@ import { createClient } from '@/utils/supabase/server'
 import { Plus, Calendar, MapPin, Ticket, DollarSign, Pencil } from 'lucide-react'
 import DeleteButton from './delete-button'
 
+interface TicketType {
+    id: string
+    name: string
+    price: number
+    total_tickets: number
+    sold_tickets: number
+    drinks_included: number
+}
+
 interface Event {
     id: string
     title: string
     description: string
     event_date: string
-    price: number
-    stock: number
-    total_tickets: number
+    price: number | null
+    stock: number | null
+    total_tickets: number | null
     status: string
     image_url: string | null
+    ticket_types: TicketType[] | null
     venues: {
         name: string
         city: string
@@ -47,11 +57,11 @@ export default async function EventsPage({
         ? await supabase
             .from('events')
             .select(`
-            id, title, description, event_date, price, stock, total_tickets, status, image_url,
-            venues ( name, city, country )
+            id, title, description, event_date, status, image_url,
+            venues ( name, city, country ),
+            ticket_types ( id, name, price, total_tickets, sold_tickets, drinks_included )
         `)
-
-            .eq('venue_id', myVenue.id) // <--- 🔒 EL CANDADO: Solo eventos de TU local
+            .eq('venue_id', myVenue.id)
             .order('event_date', { ascending: false })
         : { data: [], error: null }
 
@@ -129,8 +139,14 @@ export default async function EventsPage({
                             })
 
                             const venue = Array.isArray(event.venues) ? event.venues[0] : event.venues
-                            const soldTickets = event.total_tickets - event.stock
-                            const soldPercentage = Math.max(0, (soldTickets / event.total_tickets) * 100)
+
+                            // Derive everything from ticket_types - ignore legacy columns
+                            const tts = event.ticket_types ?? []
+                            const typeCount = tts.length
+                            const totalAvailable = tts.reduce((sum, tt) => sum + Math.max(0, tt.total_tickets - tt.sold_tickets), 0)
+                            const totalCapacity = tts.reduce((sum, tt) => sum + tt.total_tickets, 0)
+                            const totalSold = tts.reduce((sum, tt) => sum + tt.sold_tickets, 0)
+                            const soldPercentage = totalCapacity > 0 ? Math.max(0, (totalSold / totalCapacity) * 100) : 0
 
                             return (
                                 <div
@@ -206,24 +222,38 @@ export default async function EventsPage({
                                                         <p className="text-zinc-400 text-xs">{venue?.city}, {venue?.country}</p>
                                                     </div>
                                                 </div>
+                                                {/* Ticket Types count */}
                                                 <div className="flex items-center gap-2 text-sm">
                                                     <DollarSign className="w-4 h-4 text-zinc-500" />
                                                     <div>
-                                                        <p className="text-zinc-500 text-xs">Price</p>
-                                                        <p className="text-white font-medium">${event.price.toLocaleString()}</p>
+                                                        <p className="text-zinc-500 text-xs">Tipos de Entrada</p>
+                                                        <p className="text-white font-medium">
+                                                            {typeCount > 0
+                                                                ? <span className="text-sky-400 font-bold">{typeCount} {typeCount === 1 ? 'Tipo' : 'Tipos'}</span>
+                                                                : <span className="text-zinc-500">Sin configurar</span>
+                                                            }
+                                                        </p>
                                                     </div>
                                                 </div>
+                                                {/* Ticket availability from ticket_types */}
                                                 <div className="flex items-center gap-2 text-sm">
                                                     <Ticket className="w-4 h-4 text-zinc-500" />
                                                     <div>
-                                                        <p className="text-zinc-500 text-xs">Tickets</p>
-                                                        <p className="text-white font-medium">{soldTickets} / {event.total_tickets}</p>
-                                                        <div className="w-full bg-zinc-800 rounded-full h-1.5 mt-1">
-                                                            <div
-                                                                className="bg-green-500 h-1.5 rounded-full transition-all"
-                                                                style={{ width: `${soldPercentage}%` }}
-                                                            />
-                                                        </div>
+                                                        <p className="text-zinc-500 text-xs">Disponibles</p>
+                                                        <p className="text-white font-medium">
+                                                            {typeCount > 0
+                                                                ? `${totalSold} vendidas / ${totalCapacity}`
+                                                                : <span className="text-zinc-500">N/A</span>
+                                                            }
+                                                        </p>
+                                                        {totalCapacity > 0 && (
+                                                            <div className="w-full bg-zinc-800 rounded-full h-1.5 mt-1">
+                                                                <div
+                                                                    className="bg-green-500 h-1.5 rounded-full transition-all"
+                                                                    style={{ width: `${soldPercentage}%` }}
+                                                                />
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>

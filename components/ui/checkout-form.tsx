@@ -4,17 +4,26 @@ import { useState } from "react"
 import { purchaseTickets } from '@/app/actions'
 import { ArrowRight, CreditCard, Lock, Mail, ShieldCheck, Ticket, AlertCircle, User } from "lucide-react"
 
-export function CheckoutForm({ event }: { event: any }) {
+type TicketType = {
+  id: string
+  name: string
+  price: number
+  drinks_included: number
+}
+
+export function CheckoutForm({ event, selectedTicketType }: { event: any; selectedTicketType: TicketType | null }) {
   const [quantity, setQuantity] = useState(1)
   const [email, setEmail] = useState('')
-  // --- NUEVO: Estado para el nombre ---
-  const [name, setName] = useState('') 
+  const [name, setName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
   if (!event) return <div className="text-center text-red-500">Error cargando datos del evento.</div>
 
-  const ticketPrice = event.price || 0
+  // Use selected ticket type price or fallback to event price
+  const ticketPrice = selectedTicketType ? selectedTicketType.price : (event.price || 0)
+  const ticketTypeName = selectedTicketType ? selectedTicketType.name : 'General'
+  const drinksIncluded = selectedTicketType ? selectedTicketType.drinks_included : 0
   const total = ticketPrice * quantity
 
   const formatPrice = (amount: number) => {
@@ -24,14 +33,14 @@ export function CheckoutForm({ event }: { event: any }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     // --- NUEVO: Validamos que el nombre no esté vacío ---
-    if (!email || !name || !event.id) return 
+    if (!email || !name || !event.id) return
 
-    setErrorMessage('') 
+    setErrorMessage('')
 
     try {
       setIsSubmitting(true)
-      // --- NUEVO: Enviamos el nombre a la acción ---
-      await purchaseTickets(event.id, email, name, quantity)
+      // Pass ticket_type_id if available
+      await purchaseTickets(event.id, email, name, quantity, selectedTicketType?.id)
     } catch (error) {
       console.error(error)
       const msg = error instanceof Error ? error.message : 'Hubo un problema al procesar tu compra.'
@@ -45,33 +54,39 @@ export function CheckoutForm({ event }: { event: any }) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
-      
+
       {/* --- COLUMNA IZQUIERDA: RESUMEN (Igual que antes) --- */}
       <div className="space-y-6 order-2 lg:order-1">
         <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-zinc-900/50 backdrop-blur-xl p-8">
           <div className="absolute top-0 right-0 w-64 h-64 bg-sky-500/10 rounded-full blur-[100px] -z-10" />
-          
+
           <div className="flex items-start justify-between mb-8">
             <div>
-               <p className="text-xs font-medium text-sky-400 uppercase tracking-widest mb-2">Resumen de compra</p>
-               <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight">{event.title}</h2>
-               <p className="text-zinc-400 text-sm mt-1">{venueName}, {venueCity}</p>
+              <p className="text-xs font-medium text-sky-400 uppercase tracking-widest mb-2">Resumen de compra</p>
+              <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight">{event.title}</h2>
+              <p className="text-zinc-400 text-sm mt-1">{venueName}, {venueCity}</p>
             </div>
             <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center border border-white/10 shrink-0">
-                <Ticket className="w-6 h-6 text-white" />
+              <Ticket className="w-6 h-6 text-white" />
             </div>
           </div>
 
           <div className="space-y-4 border-b border-white/10 pb-8 mb-8">
             <div className="flex items-center gap-3 text-zinc-400 text-sm">
-                <ShieldCheck className="w-4 h-4 text-zinc-500" />
-                <span>Entrada General Garantizada</span>
+              <ShieldCheck className="w-4 h-4 text-zinc-500" />
+              <span>{ticketTypeName} Garantizada</span>
             </div>
+            {drinksIncluded > 0 && (
+              <div className="flex items-center gap-3 text-sky-400 text-sm">
+                <span className="text-lg">🍹</span>
+                <span>Incluye {drinksIncluded} {drinksIncluded === 1 ? 'consumición' : 'consumiciones'}</span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-3 text-sm">
             <div className="flex justify-between text-zinc-400">
-              <span>Entrada ({formatPrice(ticketPrice)} x {quantity})</span>
+              <span>{ticketTypeName} ({formatPrice(ticketPrice)} x {quantity})</span>
               <span>{formatPrice(total)}</span>
             </div>
             <div className="h-px bg-white/10 my-4" />
@@ -83,105 +98,105 @@ export function CheckoutForm({ event }: { event: any }) {
         </div>
 
         <div className="flex items-center gap-4 p-4 rounded-xl bg-green-900/10 border border-green-500/20 text-green-400 text-xs md:text-sm">
-            <Lock className="w-4 h-4 shrink-0" />
-            <p>Tus entradas se reservan y envían al instante.</p>
+          <Lock className="w-4 h-4 shrink-0" />
+          <p>Tus entradas se reservan y envían al instante.</p>
         </div>
       </div>
 
       {/* --- COLUMNA DERECHA: FORMULARIO --- */}
       <div className="relative order-1 lg:order-2">
         <form onSubmit={handleSubmit} className="space-y-8">
-            
-            {errorMessage && (
-              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-3 text-red-400 animate-in fade-in slide-in-from-top-2">
-                <AlertCircle className="w-5 h-5 shrink-0" />
-                <p className="text-sm">{errorMessage}</p>
+
+          {errorMessage && (
+            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-3 text-red-400 animate-in fade-in slide-in-from-top-2">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              <p className="text-sm">{errorMessage}</p>
+            </div>
+          )}
+
+          {/* Paso 1: Cantidad */}
+          <div className="space-y-4">
+            <h3 className="text-lg md:text-xl font-bold text-white flex items-center gap-3">
+              <span className="w-6 h-6 rounded-full bg-sky-500 text-black text-xs flex items-center justify-center font-bold shadow-[0_0_10px_rgba(14,165,233,0.5)]">1</span>
+              Selecciona cantidad
+            </h3>
+            <div className="flex items-center gap-4">
+              <button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-12 h-12 rounded-xl bg-zinc-800 border border-white/10 text-white hover:bg-zinc-700 transition flex items-center justify-center text-xl font-medium">-</button>
+              <input type="number" readOnly value={quantity} className="w-20 h-12 bg-black border border-white/20 rounded-xl text-center text-white font-bold text-lg focus:outline-none" />
+              <button type="button" onClick={() => setQuantity(Math.min(10, quantity + 1))} className="w-12 h-12 rounded-xl bg-zinc-800 border border-white/10 text-white hover:bg-zinc-700 transition flex items-center justify-center text-xl font-medium">+</button>
+            </div>
+          </div>
+
+          {/* Paso 2: Tus Datos */}
+          <div className="space-y-4">
+            <h3 className="text-lg md:text-xl font-bold text-white flex items-center gap-3">
+              <span className="w-6 h-6 rounded-full bg-sky-500 text-black text-xs flex items-center justify-center font-bold shadow-[0_0_10px_rgba(14,165,233,0.5)]">2</span>
+              Tus Datos
+            </h3>
+            <div className="space-y-3">
+
+              {/* --- NUEVO INPUT: NOMBRE --- */}
+              <div className="relative group">
+                <User className="absolute left-4 top-3.5 w-5 h-5 text-zinc-500 group-focus-within:text-sky-400 transition-colors" />
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Nombre Completo"
+                  className="w-full bg-zinc-900/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder:text-zinc-600 focus:border-sky-500/50 focus:ring-1 focus:ring-sky-500/50 transition outline-none"
+                  required
+                />
               </div>
-            )}
 
-            {/* Paso 1: Cantidad */}
-            <div className="space-y-4">
-                <h3 className="text-lg md:text-xl font-bold text-white flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full bg-sky-500 text-black text-xs flex items-center justify-center font-bold shadow-[0_0_10px_rgba(14,165,233,0.5)]">1</span>
-                    Selecciona cantidad
-                </h3>
-                <div className="flex items-center gap-4">
-                    <button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-12 h-12 rounded-xl bg-zinc-800 border border-white/10 text-white hover:bg-zinc-700 transition flex items-center justify-center text-xl font-medium">-</button>
-                    <input type="number" readOnly value={quantity} className="w-20 h-12 bg-black border border-white/20 rounded-xl text-center text-white font-bold text-lg focus:outline-none" />
-                    <button type="button" onClick={() => setQuantity(Math.min(10, quantity + 1))} className="w-12 h-12 rounded-xl bg-zinc-800 border border-white/10 text-white hover:bg-zinc-700 transition flex items-center justify-center text-xl font-medium">+</button>
-                </div>
+              {/* INPUT: EMAIL */}
+              <div className="relative group">
+                <Mail className="absolute left-4 top-3.5 w-5 h-5 text-zinc-500 group-focus-within:text-sky-400 transition-colors" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="correo@ejemplo.com"
+                  className="w-full bg-zinc-900/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder:text-zinc-600 focus:border-sky-500/50 focus:ring-1 focus:ring-sky-500/50 transition outline-none"
+                  required
+                />
+              </div>
+              <p className="text-xs text-zinc-500 pl-1">Las entradas llegarán a este correo.</p>
             </div>
+          </div>
 
-            {/* Paso 2: Tus Datos */}
-            <div className="space-y-4">
-                <h3 className="text-lg md:text-xl font-bold text-white flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full bg-sky-500 text-black text-xs flex items-center justify-center font-bold shadow-[0_0_10px_rgba(14,165,233,0.5)]">2</span>
-                    Tus Datos
-                </h3>
-                <div className="space-y-3">
-                    
-                    {/* --- NUEVO INPUT: NOMBRE --- */}
-                    <div className="relative group">
-                        <User className="absolute left-4 top-3.5 w-5 h-5 text-zinc-500 group-focus-within:text-sky-400 transition-colors" />
-                        <input 
-                            type="text" 
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="Nombre Completo" 
-                            className="w-full bg-zinc-900/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder:text-zinc-600 focus:border-sky-500/50 focus:ring-1 focus:ring-sky-500/50 transition outline-none"
-                            required
-                        />
-                    </div>
-
-                    {/* INPUT: EMAIL */}
-                    <div className="relative group">
-                        <Mail className="absolute left-4 top-3.5 w-5 h-5 text-zinc-500 group-focus-within:text-sky-400 transition-colors" />
-                        <input 
-                            type="email" 
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="correo@ejemplo.com" 
-                            className="w-full bg-zinc-900/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder:text-zinc-600 focus:border-sky-500/50 focus:ring-1 focus:ring-sky-500/50 transition outline-none"
-                            required
-                        />
-                    </div>
-                    <p className="text-xs text-zinc-500 pl-1">Las entradas llegarán a este correo.</p>
+          {/* Paso 3: Pago Visual */}
+          <div className="space-y-4">
+            <h3 className="text-lg md:text-xl font-bold text-white flex items-center gap-3">
+              <span className="w-6 h-6 rounded-full bg-sky-500 text-black text-xs flex items-center justify-center font-bold shadow-[0_0_10px_rgba(14,165,233,0.5)]">3</span>
+              Pago Seguro
+            </h3>
+            <div className="p-4 rounded-xl border border-white/10 bg-black/40 space-y-4 opacity-80 hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="flex-1 h-10 bg-zinc-800/50 rounded-lg border border-white/5 flex items-center px-3 gap-2">
+                  <CreditCard className="w-4 h-4 text-zinc-500" />
+                  <span className="text-zinc-500 text-sm">Tarjeta de Crédito / Débito</span>
                 </div>
+              </div>
+              <div className="flex items-center justify-between text-[10px] md:text-xs text-zinc-500">
+                <span className="flex items-center gap-1"><Lock className="w-3 h-3" /> Transacción SSL Encriptada</span>
+              </div>
             </div>
+          </div>
 
-            {/* Paso 3: Pago Visual */}
-            <div className="space-y-4">
-                <h3 className="text-lg md:text-xl font-bold text-white flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full bg-sky-500 text-black text-xs flex items-center justify-center font-bold shadow-[0_0_10px_rgba(14,165,233,0.5)]">3</span>
-                    Pago Seguro
-                </h3>
-                <div className="p-4 rounded-xl border border-white/10 bg-black/40 space-y-4 opacity-80 hover:opacity-100 transition-opacity">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="flex-1 h-10 bg-zinc-800/50 rounded-lg border border-white/5 flex items-center px-3 gap-2">
-                            <CreditCard className="w-4 h-4 text-zinc-500" />
-                            <span className="text-zinc-500 text-sm">Tarjeta de Crédito / Débito</span>
-                        </div>
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] md:text-xs text-zinc-500">
-                        <span className="flex items-center gap-1"><Lock className="w-3 h-3" /> Transacción SSL Encriptada</span>
-                    </div>
-                </div>
-            </div>
+          {/* Botón Submit */}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="group w-full relative overflow-hidden rounded-full bg-white py-4 px-8 text-black font-bold text-lg transition-all hover:scale-[1.02] hover:shadow-[0_0_40px_rgba(255,255,255,0.3)] disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              {isSubmitting ? 'Procesando...' : `Pagar ${formatPrice(total)}`}
+              {!isSubmitting && <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />}
+            </span>
+            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700" />
+          </button>
 
-            {/* Botón Submit */}
-            <button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="group w-full relative overflow-hidden rounded-full bg-white py-4 px-8 text-black font-bold text-lg transition-all hover:scale-[1.02] hover:shadow-[0_0_40px_rgba(255,255,255,0.3)] disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                    {isSubmitting ? 'Procesando...' : `Pagar ${formatPrice(total)}`}
-                    {!isSubmitting && <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />}
-                </span>
-                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700" />
-            </button>
-
-            <p className="text-center text-xs text-zinc-600">Al continuar, aceptas los Términos de Vouncer.</p>
+          <p className="text-center text-xs text-zinc-600">Al continuar, aceptas los Términos de Vouncer.</p>
         </form>
       </div>
     </div>

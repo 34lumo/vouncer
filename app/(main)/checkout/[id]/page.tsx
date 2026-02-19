@@ -10,21 +10,38 @@ export const revalidate = 0
 
 interface PageProps {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ ticket_type_id?: string }>
 }
 
-export default async function CheckoutPage({ params }: PageProps) {
+export default async function CheckoutPage({ params, searchParams }: PageProps) {
   const { id } = await params
+  const { ticket_type_id } = await searchParams
   const supabase = await createClient()
 
-  // Consulta completa
+  // Consulta completa con ticket_types
   const { data: event, error } = await supabase
     .from('events')
-    .select('*, venues(name, city)')
+    .select('*, venues(name, city, address), ticket_types(*)')
     .eq('id', id)
     .single()
 
   if (error || !event) {
     notFound()
+  }
+
+  // Fetch specific ticket type if ticket_type_id is provided
+  let selectedTicketType = null
+  if (ticket_type_id) {
+    const ticketTypes = event.ticket_types as Array<{
+      id: string
+      name: string
+      price: number
+      total_tickets: number
+      sold_tickets: number
+      drinks_included: number
+    }> | null
+
+    selectedTicketType = ticketTypes?.find(tt => tt.id === ticket_type_id) || null
   }
 
   return (
@@ -56,9 +73,7 @@ export default async function CheckoutPage({ params }: PageProps) {
         </div>
 
         <div className="relative z-10">
-          {/* AQUÍ ESTABA EL ERROR EN TU CAPTURA:
-                Ahora pasamos 'event' completo, no props sueltas. */}
-          <CheckoutForm event={event} />
+          <CheckoutForm event={event} selectedTicketType={selectedTicketType} />
         </div>
       </main>
     </div>

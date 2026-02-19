@@ -15,16 +15,26 @@ export default async function EventDetailPage({ params }: PageProps) {
   const { id } = await params
   const supabase = await createClient()
 
-  // Consulta a Supabase - incluye image_url y address
+  // Consulta a Supabase - incluye image_url, address, and ticket_types
   const { data: event, error } = await supabase
     .from('events')
-    .select('*, venues(name, city, address)')
+    .select('*, venues(name, city, address), ticket_types(*)')
     .eq('id', id)
     .single()
 
   if (error || !event) {
     notFound()
   }
+
+  // Fetch ticket types (with backward compatibility)
+  const ticketTypes = event.ticket_types as Array<{
+    id: string
+    name: string
+    price: number
+    total_tickets: number
+    sold_tickets: number
+    drinks_included: number
+  }> | null
 
   // Preparación de datos
   const venue = event.venues as { name: string; city: string; address?: string | null } | null
@@ -56,9 +66,13 @@ export default async function EventDetailPage({ params }: PageProps) {
     ? eventDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
     : '--:--'
 
-  const priceFormatted = event.price
-    ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(event.price)
-    : 'Gratis'
+  // Min price derived exclusively from ticket_types (legacy event.price ignored)
+  const minPrice = ticketTypes && ticketTypes.length > 0
+    ? Math.min(...ticketTypes.map(t => t.price))
+    : null
+  const minPriceFormatted = minPrice !== null
+    ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(minPrice)
+    : null
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-sky-500/30 pb-32 lg:pb-0">
@@ -165,27 +179,61 @@ export default async function EventDetailPage({ params }: PageProps) {
           <div className="hidden lg:block">
             <div className="sticky top-24 flex flex-col gap-6 rounded-2xl border border-white/10 bg-zinc-900/60 p-6 backdrop-blur-xl shadow-2xl shadow-black/50">
 
-              {/* Precio */}
-              <div className="flex flex-col gap-1">
-                <span className="text-sm text-zinc-500 font-medium uppercase tracking-wide">Precio Entrada</span>
-                <span className="text-4xl font-bold tracking-tight text-white">
-                  {priceFormatted}
-                </span>
-              </div>
+              {/* Ticket Types or Legacy Price */}
+              {ticketTypes && ticketTypes.length > 0 ? (
+                <>
+                  <div className="flex flex-col gap-1 mb-2">
+                    <span className="text-sm text-zinc-500 font-medium uppercase tracking-wide">Tipos de Entrada</span>
+                  </div>
 
-              {/* Disponibilidad */}
-              <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 px-3 py-2 border border-emerald-500/20">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span className="text-sm font-medium text-emerald-400">Entradas Disponibles</span>
-              </div>
+                  <div className="space-y-3">
+                    {ticketTypes.map((ticketType) => {
+                      const isSoldOut = ticketType.sold_tickets >= ticketType.total_tickets
+                      const availability = ticketType.total_tickets - ticketType.sold_tickets
+                      const ttPrice = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(ticketType.price)
 
-              {/* BOTÓN DE COMPRA */}
-              <Link
-                href={`/checkout/${id}`}
-                className="group w-full rounded-xl bg-white px-6 py-4 text-center text-base font-bold text-black transition-all hover:bg-zinc-200 hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(255,255,255,0.15)]"
-              >
-                Comprar Entradas
-              </Link>
+                      return (
+                        <div key={ticketType.id} className={`border rounded-xl p-4 transition-all ${isSoldOut ? 'border-zinc-800 bg-zinc-900/50 opacity-60' : 'border-white/10 bg-zinc-800/50 hover:border-sky-500/50'}`}>
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h4 className="font-bold text-white text-lg">{ticketType.name}</h4>
+                              {ticketType.drinks_included > 0 && (
+                                <p className="text-xs text-sky-400 mt-1">Incluye {ticketType.drinks_included} {ticketType.drinks_included === 1 ? 'consumición' : 'consumiciones'}</p>
+                              )}
+                            </div>
+                            <span className="text-xl font-bold text-white">{ttPrice}</span>
+                          </div>
+
+                          {isSoldOut ? (
+                            <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-center">
+                              <span className="text-sm font-bold text-red-400">AGOTADO</span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 px-3 py-1.5 border border-emerald-500/20 mb-3">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                <span className="text-xs font-medium text-emerald-400">{availability} disponibles</span>
+                              </div>
+                              <Link href={`/checkout/${id}?ticket_type_id=${ticketType.id}`} className="block w-full rounded-lg bg-white px-4 py-2.5 text-center text-sm font-bold text-black transition-all hover:bg-zinc-200">
+                                Comprar
+                              </Link>
+                            </>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              ) : (
+                // No ticket types configured — safe neutral state, NO checkout link
+                <div className="flex flex-col items-center justify-center gap-3 py-6 text-center">
+                  <Ticket className="w-10 h-10 text-zinc-600" />
+                  <div>
+                    <p className="font-semibold text-zinc-300">Entradas próximamente</p>
+                    <p className="text-xs text-zinc-500 mt-1">Los tipos de entrada aún no están configurados.</p>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-center gap-2 text-zinc-500 border-t border-white/10 pt-4">
                 <Lock className="h-3.5 w-3.5" />
@@ -198,20 +246,57 @@ export default async function EventDetailPage({ params }: PageProps) {
       </main>
 
       {/* --- 4. BARRA MÓVIL (Fixed Bottom) --- */}
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-black/80 px-6 py-4 backdrop-blur-xl lg:hidden safe-area-bottom">
-        <div className="flex items-center justify-between gap-4 max-w-md mx-auto">
-          <div className="flex flex-col">
-            <span className="text-xs text-zinc-500 font-medium uppercase">Total</span>
-            <span className="text-xl font-bold text-white">
-              {priceFormatted}
-            </span>
-          </div>
-          <Link
-            href={`/checkout/${id}`}
-            className="flex-1 rounded-xl bg-white px-6 py-3 text-center text-sm font-bold text-black transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-white/10"
-          >
-            Comprar Ahora
-          </Link>
+      {/* SECURITY: uses ONLY ticket_types data — legacy event.price is never read here */}
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-black/90 px-4 py-4 backdrop-blur-xl lg:hidden">
+        <div className="max-w-md mx-auto">
+          {ticketTypes && ticketTypes.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-xs text-zinc-500 font-medium uppercase tracking-wide mb-2">
+                {minPriceFormatted ? `Desde ${minPriceFormatted}` : 'Tipos de Entrada'}
+              </p>
+              {ticketTypes.map((ticketType) => {
+                const isSoldOut = ticketType.sold_tickets >= ticketType.total_tickets
+                const ttPrice = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(ticketType.price)
+                const availability = ticketType.total_tickets - ticketType.sold_tickets
+
+                return (
+                  <div key={ticketType.id} className={`flex items-center justify-between gap-3 rounded-xl px-4 py-3 border transition-all ${isSoldOut
+                    ? 'border-zinc-800 bg-zinc-900/60 opacity-60'
+                    : 'border-white/10 bg-zinc-900/80 hover:border-sky-500/40'
+                    }`}>
+                    <div className="min-w-0">
+                      <p className="font-bold text-white text-sm truncate">{ticketType.name}</p>
+                      {ticketType.drinks_included > 0 && (
+                        <p className="text-xs text-sky-400">{ticketType.drinks_included} consumición{ticketType.drinks_included > 1 ? 'es' : ''}</p>
+                      )}
+                      {!isSoldOut && (
+                        <p className="text-xs text-emerald-400">{availability} disponibles</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-sm font-bold text-white">{ttPrice}</span>
+                      {isSoldOut ? (
+                        <span className="text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-lg">AGOTADO</span>
+                      ) : (
+                        <Link
+                          href={`/checkout/${id}?ticket_type_id=${ticketType.id}`}
+                          className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-black hover:bg-zinc-200 transition-colors"
+                        >
+                          Comprar
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            // No ticket types configured yet — show a neutral message, NO checkout link
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-zinc-900/80 px-4 py-4">
+              <Ticket className="w-4 h-4 text-zinc-500" />
+              <span className="text-sm text-zinc-400 font-medium">Entradas próximamente</span>
+            </div>
+          )}
         </div>
       </div>
 

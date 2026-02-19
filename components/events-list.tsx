@@ -12,21 +12,22 @@ export async function EventsList() {
 
     const { data: events, error } = await supabase
         .from('events')
-        .select('*, venues(name, city, address)')
+        .select('*, venues(name, city, address), ticket_types(*)')
         .gt('ends_at', twelveHoursAgo)  // Hide events 12 hours after they finish
         .order('event_date', { ascending: true })
         .limit(6)
 
-    const formatPrice = (price: number | string | null) => {
-        if (!price) return 'Gratis'
-        const numPrice = typeof price === 'string' ? parseFloat(price) : price
-        if (isNaN(numPrice)) return 'Gratis'
-        return new Intl.NumberFormat('es-CO', {
+    // Derive price display from ticket_types (ignoring legacy event.price)
+    const getPriceLabel = (ticketTypes: Array<{ price: number }> | null | undefined): string => {
+        if (!ticketTypes || ticketTypes.length === 0) return 'Próximamente'
+        const minPrice = Math.min(...ticketTypes.map(t => t.price))
+        if (minPrice === 0) return 'Gratis'
+        return `Desde ${new Intl.NumberFormat('es-CO', {
             style: 'currency',
             currency: 'COP',
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,
-        }).format(numPrice)
+        }).format(minPrice)}`
     }
 
     if (error) {
@@ -90,13 +91,13 @@ export async function EventsList() {
 
                 // Event lifecycle state logic - STRICT PRIORITY HIERARCHY
                 const now = new Date()
-                const totalTickets = (event as any).total_tickets || 0
-                const soldTickets = (event as any).sold_tickets || 0
+                const ticketTypes = (event as any).ticket_types as Array<{ price: number; total_tickets: number; sold_tickets: number }> | null
                 const endsAt = (event as any).ends_at ? new Date((event as any).ends_at) : null
                 const salesEndsAt = (event as any).sales_ends_at ? new Date((event as any).sales_ends_at) : null
 
-                // PRIORITY 1: SOLD OUT (sold_tickets >= total_tickets)
-                const isSoldOut = soldTickets >= totalTickets
+                // SOLD OUT: all ticket types exhausted (or no types at all but had tickets before)
+                const isSoldOut = ticketTypes != null && ticketTypes.length > 0 &&
+                    ticketTypes.every(tt => tt.sold_tickets >= tt.total_tickets)
 
                 // PRIORITY 2: FINISHED (now > ends_at)
                 const isFinished = !isSoldOut && endsAt && now > endsAt
@@ -179,7 +180,7 @@ export async function EventsList() {
                                     <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider mb-1">
                                         {isSoldOut ? 'Sold Out' : isSalesClosed ? 'Venta Cerrada' : isFinished ? 'Finalizado' : 'Entrada'}
                                     </p>
-                                    <p className="text-xl font-bold text-white">{formatPrice(event.price)}</p>
+                                    <p className="text-xl font-bold text-white">{getPriceLabel(ticketTypes)}</p>
                                 </div>
                                 {isAvailable ? (
                                     <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-sky-500 group-hover:border-sky-500 transition-all duration-300 group-hover:scale-110">

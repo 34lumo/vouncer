@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Vouncer",
-  description: "Gestión de entradas y eventos",
+  title: "Vouncer - Tu entrada al club",
+  description: "Gestión de entradas y eventos. Compra, vende y valida tickets de forma segura.",
 }
 
 export default function RootLayout({
