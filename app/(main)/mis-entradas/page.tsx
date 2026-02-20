@@ -44,21 +44,11 @@ export default async function MisEntradasPage({
 
     const { data: tickets, error } = await supabaseAdmin
         .from('tickets')
-        .select(`
-            id,
-            qr_token,
-            status,
-            created_at,
-            event_id,
-            ticket_type_id,
-            events ( id, title, event_date, venues ( name, city ) ),
-            ticket_types ( name, drinks_included )
-        `)
+        .select('*')
         .in('id', idsArray)
-        .order('purchased_at', { ascending: false })
 
     console.log('🎟️ mis-entradas: tickets =', JSON.stringify(tickets))
-    if (error) console.error('❌ mis-entradas query error:', error)
+    if (error) console.error('❌ Error real:', error?.message, '|', error?.details, '|', error?.hint)
 
     const hasTickets = tickets && tickets.length > 0
 
