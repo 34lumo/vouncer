@@ -55,7 +55,7 @@ export default async function MisEntradasPage({
             ticket_types ( name, drinks_included )
         `)
         .in('id', idsArray)
-        .order('created_at', { ascending: false })
+        .order('purchased_at', { ascending: false })
 
     console.log('🎟️ mis-entradas: tickets =', JSON.stringify(tickets))
     if (error) console.error('❌ mis-entradas query error:', error)
