@@ -3,6 +3,9 @@ import Link from 'next/link'
 import QRCode from 'react-qr-code'
 import { Ticket, Calendar, MapPin, ArrowLeft, AlertTriangle } from 'lucide-react'
 
+// Prevent Next.js from caching a stale empty result
+export const dynamic = 'force-dynamic'
+
 interface SearchParams {
     ids?: string
 }
@@ -29,31 +32,33 @@ export default async function MisEntradasPage({
         )
     }
 
-    const idsArray = ids.split(',').filter(Boolean)
+    // Safe parse — trim whitespace from each UUID
+    const idsArray = ids.split(',').map(s => s.trim()).filter(Boolean)
+    console.log('🎟️ mis-entradas: idsArray =', idsArray)
 
-    // Use Admin Client (Service Role) to bypass RLS.
-    // The unguessable UUIDs in the magic link act as auth — no account needed.
+    // Use Service Role to bypass RLS — UUIDs are unguessable, act as auth
     const supabaseAdmin = createAdminClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
-    const { data: tickets } = await supabaseAdmin
+
+    const { data: tickets, error } = await supabaseAdmin
         .from('tickets')
         .select(`
             id,
             qr_token,
             status,
             created_at,
-            event:events (
-                id,
-                title,
-                event_date,
-                venues ( name, city )
-            ),
-            ticket_type:ticket_types ( name, drinks_included )
+            event_id,
+            ticket_type_id,
+            events ( id, title, event_date, venues ( name, city ) ),
+            ticket_types ( name, drinks_included )
         `)
         .in('id', idsArray)
         .order('created_at', { ascending: false })
+
+    console.log('🎟️ mis-entradas: tickets =', JSON.stringify(tickets))
+    if (error) console.error('❌ mis-entradas query error:', error)
 
     const hasTickets = tickets && tickets.length > 0
 
@@ -95,13 +100,13 @@ export default async function MisEntradasPage({
                         // Never generate new strings at render time.
                         const qrValue = (ticket.qr_token ?? ticket.id) as string
 
-                        const event = ticket.event as unknown as {
+                        const event = ticket.events as unknown as {
                             id: string
                             title: string
                             event_date: string | null
                             venues: { name: string; city: string } | null
                         } | null
-                        const ticketType = ticket.ticket_type as unknown as {
+                        const ticketType = ticket.ticket_types as unknown as {
                             name: string
                             drinks_included: number
                         } | null
