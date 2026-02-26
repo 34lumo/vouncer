@@ -79,16 +79,6 @@ FROM events e
 WHERE e.event_date >= NOW()  -- Only future events
 ORDER BY e.event_date ASC;
 
--- 9. EXAMPLE QUERIES
-
--- Get all available events (future, not sold out, sales open)
--- SELECT * FROM available_events WHERE event_status = 'available';
-
--- Get sold out events
--- SELECT * FROM available_events WHERE event_status = 'sold_out';
-
--- Get events with sales closed
--- SELECT * FROM available_events WHERE event_status = 'sales_closed';
 
 -- 10. VERIFY THE CHANGES
 SELECT 

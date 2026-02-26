@@ -6,7 +6,10 @@ import { EventsList } from '@/components/events-list'
 import { EventsGridSkeleton } from '@/components/skeletons/events-grid-skeleton'
 import { Suspense } from 'react'
 
-export const revalidate = 0
+// ISR: Vercel serves a cached static snapshot and regenerates it in the
+// background every 60 seconds. This means TTFB drops to ~0ms for all
+// visitors on warm cache while data stays at most 60 seconds stale.
+export const revalidate = 60
 
 export default function Home() {
   return (
