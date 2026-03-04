@@ -1,10 +1,10 @@
-import { createClient } from '@/utils/supabase/server'
+import { createPublicClient } from '@/utils/supabase/public'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, CalendarDays, MapPin, Ticket } from 'lucide-react'
 
 export async function EventsList() {
-    const supabase = await createClient()
+    const supabase = createPublicClient()
 
     // Optimized query: JOIN with venues, fetch lifecycle data including address
     // Filter: Show events until 12 hours AFTER they end
