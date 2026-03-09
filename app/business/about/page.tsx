@@ -12,15 +12,15 @@ export default function AboutPage() {
 
                 <div className="relative max-w-4xl mx-auto px-6 py-24 md:py-32 text-center">
                     <h1 className="text-5xl md:text-6xl font-bold mb-6">
-                        About Vouncer
+                        Sobre Vouncer
                     </h1>
                     <p className="text-xl md:text-2xl text-zinc-400 leading-relaxed">
-                        We're building the infrastructure that powers the future of nightlife.
+                        Construimos la infraestructura que impulsa el futuro de la vida nocturna.
                     </p>
                 </div>
             </section>
 
-            {/* Mission */}
+            {/* Misión */}
             <section className="py-24 border-b border-white/10">
                 <div className="max-w-4xl mx-auto px-6">
                     <div className="flex items-start gap-6 mb-8">
@@ -28,25 +28,25 @@ export default function AboutPage() {
                             <Target className="w-6 h-6 text-sky-400" />
                         </div>
                         <div>
-                            <h2 className="text-3xl md:text-4xl font-bold mb-4">Our Mission</h2>
+                            <h2 className="text-3xl md:text-4xl font-bold mb-4">Nuestra Misión</h2>
                             <p className="text-xl text-zinc-400 leading-relaxed">
-                                To digitize nightlife securely and transparently, empowering venues with the tools they need to operate efficiently while delivering exceptional experiences to their guests.
+                                Digitalizar la vida nocturna de forma segura y transparente, dotando a los venues de las herramientas necesarias para operar con eficiencia y ofrecer experiencias excepcionales a sus clientes.
                             </p>
                         </div>
                     </div>
 
                     <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-8 md:p-12">
                         <p className="text-lg text-zinc-300 leading-relaxed mb-6">
-                            The nightlife industry has been operating with outdated technology for too long. Paper tickets, cash transactions, and manual capacity tracking create friction, enable fraud, and limit growth.
+                            La industria nocturna lleva demasiado tiempo operando con tecnología obsoleta. Las entradas en papel, las transacciones en efectivo y el control manual del aforo generan fricciones, facilitan el fraude y limitan el crecimiento.
                         </p>
                         <p className="text-lg text-zinc-300 leading-relaxed">
-                            We believe venue owners deserve better. Vouncer provides enterprise-grade infrastructure that's simple to use, secure by default, and built specifically for the unique challenges of nightlife operations.
+                            Los propietarios de venues merecen algo mejor. Vouncer ofrece infraestructura de nivel empresarial, fácil de usar, segura por defecto y diseñada específicamente para los retos únicos de la gestión nocturna.
                         </p>
                     </div>
                 </div>
             </section>
 
-            {/* Who We Are */}
+            {/* Quiénes Somos */}
             <section className="py-24 border-b border-white/10">
                 <div className="max-w-4xl mx-auto px-6">
                     <div className="flex items-start gap-6 mb-8">
@@ -54,32 +54,32 @@ export default function AboutPage() {
                             <Users2 className="w-6 h-6 text-emerald-400" />
                         </div>
                         <div>
-                            <h2 className="text-3xl md:text-4xl font-bold mb-4">Who We Are</h2>
+                            <h2 className="text-3xl md:text-4xl font-bold mb-4">Quiénes Somos</h2>
                             <p className="text-xl text-zinc-400 leading-relaxed">
-                                A team of nightlife operators and technology experts who understand both sides of the equation.
+                                Un equipo de operadores de venues y expertos en tecnología que entienden ambos lados del negocio.
                             </p>
                         </div>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6">
                         <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-8">
-                            <h3 className="text-xl font-bold mb-3">Nightlife Experience</h3>
+                            <h3 className="text-xl font-bold mb-3">Experiencia Nocturna</h3>
                             <p className="text-zinc-400 leading-relaxed">
-                                We've worked in venues, managed events, and experienced firsthand the operational challenges that keep owners up at night.
+                                Hemos trabajado en venues, gestionado eventos y vivido de primera mano los retos operativos que quitan el sueño a los propietarios.
                             </p>
                         </div>
 
                         <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-8">
-                            <h3 className="text-xl font-bold mb-3">Technical Expertise</h3>
+                            <h3 className="text-xl font-bold mb-3">Expertise Técnico</h3>
                             <p className="text-zinc-400 leading-relaxed">
-                                Our engineering team has built systems for millions of users at scale, bringing enterprise reliability to nightlife.
+                                Nuestro equipo de ingeniería ha construido sistemas para millones de usuarios a escala, llevando la fiabilidad empresarial a la vida nocturna.
                             </p>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Values */}
+            {/* Valores */}
             <section className="py-24">
                 <div className="max-w-4xl mx-auto px-6">
                     <div className="flex items-start gap-6 mb-8">
@@ -87,29 +87,29 @@ export default function AboutPage() {
                             <Lightbulb className="w-6 h-6 text-purple-400" />
                         </div>
                         <div>
-                            <h2 className="text-3xl md:text-4xl font-bold mb-4">Our Values</h2>
+                            <h2 className="text-3xl md:text-4xl font-bold mb-4">Nuestros Valores</h2>
                         </div>
                     </div>
 
                     <div className="space-y-6">
                         <div className="border-l-2 border-sky-500 pl-6">
-                            <h3 className="text-xl font-bold mb-2">Security First</h3>
+                            <h3 className="text-xl font-bold mb-2">Seguridad ante Todo</h3>
                             <p className="text-zinc-400 leading-relaxed">
-                                Every line of code is written with security in mind. Your data and your customers' data are sacred.
+                                Cada línea de código se escribe pensando en la seguridad. Tus datos y los de tus clientes son sagrados.
                             </p>
                         </div>
 
                         <div className="border-l-2 border-emerald-500 pl-6">
-                            <h3 className="text-xl font-bold mb-2">Radical Transparency</h3>
+                            <h3 className="text-xl font-bold mb-2">Transparencia Total</h3>
                             <p className="text-zinc-400 leading-relaxed">
-                                No hidden fees, no surprises. You always know exactly what you're paying for and why.
+                                Sin tarifas ocultas, sin sorpresas. Siempre sabrás exactamente por qué y cuánto estás pagando.
                             </p>
                         </div>
 
                         <div className="border-l-2 border-purple-500 pl-6">
-                            <h3 className="text-xl font-bold mb-2">Obsessive Support</h3>
+                            <h3 className="text-xl font-bold mb-2">Soporte Obsesivo</h3>
                             <p className="text-zinc-400 leading-relaxed">
-                                When you have an event, we're on call. Real humans, real-time support, every time.
+                                Cuando tienes un evento, estamos disponibles. Personas reales, soporte en tiempo real, siempre.
                             </p>
                         </div>
                     </div>
@@ -120,16 +120,16 @@ export default function AboutPage() {
             <section className="py-24 border-t border-white/10">
                 <div className="max-w-4xl mx-auto px-6 text-center">
                     <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                        Let's build the future together
+                        Construyamos el futuro juntos
                     </h2>
                     <p className="text-xl text-zinc-400 mb-8">
-                        See how Vouncer can transform your venue operations.
+                        Descubre cómo Vouncer puede transformar las operaciones de tu venue.
                     </p>
                     <Link
                         href="/business/demo"
                         className="inline-flex items-center gap-2 bg-white text-black font-semibold px-8 py-4 rounded-xl hover:bg-zinc-200 transition-all text-lg"
                     >
-                        Book a Demo
+                        Reservar Demo
                         <ArrowRight className="w-5 h-5" />
                     </Link>
                 </div>

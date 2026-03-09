@@ -76,8 +76,8 @@ export default async function EventsPage({
                 {/* Header Interno de la página */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold mb-2">Event Management</h1>
-                        <p className="text-zinc-400">Manage all your events in one place</p>
+                        <h1 className="text-3xl font-bold mb-2">Gestión de Eventos</h1>
+                        <p className="text-zinc-400">Administra todos tus eventos en un solo lugar</p>
                     </div>
 
                     {/* Botón condicional: Solo sale si tienes Venue (para evitar errores) */}
@@ -87,7 +87,7 @@ export default async function EventsPage({
                             className="flex items-center gap-2 bg-white text-black font-semibold px-6 py-3 rounded-xl hover:bg-zinc-200 transition-all shadow-lg hover:shadow-xl w-fit"
                         >
                             <Plus className="w-5 h-5" />
-                            Create Event
+                            Crear Evento
                         </Link>
                     ) : (
                         <div className="text-red-400 text-sm border border-red-500/50 bg-red-500/10 px-4 py-2 rounded-lg">
@@ -101,7 +101,7 @@ export default async function EventsPage({
                     <div className="mb-6 bg-green-500/10 border border-green-500/50 rounded-xl p-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                         <p className="text-green-400 font-medium">
-                            ✅ Event {updated ? 'updated' : 'created'} successfully!
+                            ✅ Evento {updated ? 'actualizado' : 'creado'} correctamente
                         </p>
                     </div>
                 )}
@@ -110,11 +110,11 @@ export default async function EventsPage({
                 {eventsList.length === 0 ? (
                     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-12 text-center">
                         <Ticket className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold text-zinc-400 mb-2">No events found</h3>
+                        <h3 className="text-xl font-semibold text-zinc-400 mb-2">Sin eventos</h3>
                         <p className="text-zinc-500 mb-6">
                             {myVenue
-                                ? "You haven't created any events yet."
-                                : "You need a venue assigned to create events."}
+                                ? "Todavía no has creado ningún evento."
+                                : "Necesitas un local asignado para crear eventos."}
                         </p>
 
                         {myVenue && (
@@ -123,7 +123,7 @@ export default async function EventsPage({
                                 className="inline-flex items-center gap-2 bg-white text-black font-semibold px-6 py-3 rounded-xl hover:bg-zinc-200 transition-all"
                             >
                                 <Plus className="w-5 h-5" />
-                                Create First Event
+                                Crear Primer Evento
                             </Link>
                         )}
                     </div>
@@ -196,7 +196,7 @@ export default async function EventsPage({
                                                     <Link
                                                         href={`/admin/events/${event.id}/edit`}
                                                         className="p-3 rounded-xl bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 border border-sky-500/50 hover:border-sky-500 transition-all group/btn"
-                                                        title="Edit event"
+                                                        title="Editar evento"
                                                     >
                                                         <Pencil className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
                                                     </Link>
@@ -209,7 +209,7 @@ export default async function EventsPage({
                                                 <div className="flex items-center gap-2 text-sm">
                                                     <Calendar className="w-4 h-4 text-zinc-500" />
                                                     <div>
-                                                        <p className="text-zinc-500 text-xs">Date</p>
+                                                        <p className="text-zinc-500 text-xs">Fecha</p>
                                                         <p className="text-white font-medium">{formattedDate}</p>
                                                         <p className="text-zinc-400 text-xs">{formattedTime}</p>
                                                     </div>
@@ -217,7 +217,7 @@ export default async function EventsPage({
                                                 <div className="flex items-center gap-2 text-sm">
                                                     <MapPin className="w-4 h-4 text-zinc-500" />
                                                     <div>
-                                                        <p className="text-zinc-500 text-xs">Venue</p>
+                                                        <p className="text-zinc-500 text-xs">Local</p>
                                                         <p className="text-white font-medium">{venue?.name}</p>
                                                         <p className="text-zinc-400 text-xs">{venue?.city}, {venue?.country}</p>
                                                     </div>

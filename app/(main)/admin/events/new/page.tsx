@@ -82,20 +82,20 @@ export default function NewEventPage() {
 
             // Validation
             if (validatedTicketTypes.some(tt => !tt.name)) {
-                throw new Error('All ticket types must have a name')
+                throw new Error('Todos los tipos de entrada deben tener un nombre')
             }
             if (validatedTicketTypes.some(tt => isNaN(tt.price) || tt.price < 0)) {
-                throw new Error('All ticket prices must be valid positive numbers')
+                throw new Error('Los precios deben ser números positivos válidos')
             }
             if (validatedTicketTypes.some(tt => isNaN(tt.total_tickets) || tt.total_tickets <= 0)) {
-                throw new Error('All ticket types must have at least 1 ticket')
+                throw new Error('Cada tipo necesita al menos 1 entrada')
             }
 
             formData.append('ticket_types', JSON.stringify(validatedTicketTypes))
 
             await createEventWithTicketTypes(formData)
         } catch (err: any) {
-            setError(err.message || 'Failed to create event')
+            setError(err.message || 'Error al crear el evento')
             setIsSubmitting(false)
         }
     }
@@ -105,8 +105,8 @@ export default function NewEventPage() {
             <div className="max-w-3xl mx-auto">
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold mb-2">Create New Event</h1>
-                    <p className="text-zinc-400">Fill in the event details and configure ticket types.</p>
+                    <h1 className="text-3xl font-bold mb-2">Crear Nuevo Evento</h1>
+                    <p className="text-zinc-400">Completa los detalles del evento y configura los tipos de entrada.</p>
                 </div>
 
                 {/* Error Display */}
@@ -123,14 +123,14 @@ export default function NewEventPage() {
                     <div>
                         <label htmlFor="event_image" className="block text-sm font-medium mb-2 flex items-center gap-2">
                             <ImageIcon className="w-4 h-4 text-zinc-400" />
-                            Event Poster
+                            Cartel del Evento
                         </label>
 
                         {imagePreview ? (
                             <div className="relative w-full h-64 bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden group">
                                 <Image
                                     src={imagePreview}
-                                    alt="Event preview"
+                                    alt="Vista previa del evento"
                                     fill
                                     className="object-cover"
                                 />
@@ -151,8 +151,8 @@ export default function NewEventPage() {
                                 className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-zinc-800 rounded-lg cursor-pointer hover:border-zinc-700 transition-all bg-zinc-900/50"
                             >
                                 <ImageIcon className="w-12 h-12 text-zinc-600 mb-2" />
-                                <p className="text-sm text-zinc-500">Click to upload event poster</p>
-                                <p className="text-xs text-zinc-600 mt-1">PNG, JPG up to 10MB</p>
+                                <p className="text-sm text-zinc-500">Haz clic para subir el cartel</p>
+                                <p className="text-xs text-zinc-600 mt-1">PNG, JPG hasta 10MB</p>
                             </label>
                         )}
                         <input
@@ -169,7 +169,7 @@ export default function NewEventPage() {
                     <div>
                         <label htmlFor="title" className="block text-sm font-medium mb-2 flex items-center gap-2">
                             <FileText className="w-4 h-4 text-zinc-400" />
-                            Event Title
+                            Título del Evento
                         </label>
                         <input
                             id="title"
@@ -177,7 +177,7 @@ export default function NewEventPage() {
                             type="text"
                             required
                             className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 focus:outline-none focus:border-sky-500 transition-colors"
-                            placeholder="e.g., Summer Music Festival 2026"
+                            placeholder="ej. Festival de Música Verano 2026"
                         />
                     </div>
 
@@ -185,7 +185,7 @@ export default function NewEventPage() {
                     <div>
                         <label htmlFor="description" className="block text-sm font-medium mb-2 flex items-center gap-2">
                             <AlignLeft className="w-4 h-4 text-zinc-400" />
-                            Description
+                            Descripción
                         </label>
                         <textarea
                             id="description"
@@ -193,7 +193,7 @@ export default function NewEventPage() {
                             required
                             rows={4}
                             className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 focus:outline-none focus:border-sky-500 transition-colors resize-none"
-                            placeholder="Describe your event..."
+                            placeholder="Describe tu evento..."
                         />
                     </div>
 
@@ -202,7 +202,7 @@ export default function NewEventPage() {
                         <div>
                             <label htmlFor="date" className="block text-sm font-medium mb-2 flex items-center gap-2">
                                 <Calendar className="w-4 h-4 text-zinc-400" />
-                                Event Date
+                                Fecha del Evento
                             </label>
                             <input
                                 id="date"
@@ -216,7 +216,7 @@ export default function NewEventPage() {
                         <div>
                             <label htmlFor="time" className="block text-sm font-medium mb-2 flex items-center gap-2">
                                 <Clock className="w-4 h-4 text-zinc-400" />
-                                Start Time
+                                Hora de Inicio
                             </label>
                             <input
                                 id="time"
@@ -232,7 +232,7 @@ export default function NewEventPage() {
                     <div>
                         <label htmlFor="ends_at" className="block text-sm font-medium mb-2 flex items-center gap-2">
                             <Clock className="w-4 h-4 text-zinc-400" />
-                            Event End Time
+                            Hora de Fin del Evento
                         </label>
                         <input
                             id="ends_at"
@@ -247,7 +247,7 @@ export default function NewEventPage() {
                     <div>
                         <label htmlFor="sales_ends_at" className="block text-sm font-medium mb-2 flex items-center gap-2">
                             <Clock className="w-4 h-4 text-zinc-400" />
-                            Sales End Time (Optional)
+                            Fin de Venta (Opcional)
                         </label>
                         <input
                             id="sales_ends_at"
@@ -262,7 +262,7 @@ export default function NewEventPage() {
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xl font-bold flex items-center gap-2">
                                 <Ticket className="w-5 h-5 text-sky-400" />
-                                Ticket Types
+                                Tipos de Entrada
                             </h2>
                             <button
                                 type="button"
@@ -270,7 +270,7 @@ export default function NewEventPage() {
                                 className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
                             >
                                 <Plus className="w-4 h-4" />
-                                Add Type
+                                Añadir Tipo
                             </button>
                         </div>
 
@@ -278,7 +278,7 @@ export default function NewEventPage() {
                             {ticketTypes.map((tt, index) => (
                                 <div key={index} className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
                                     <div className="flex items-center justify-between mb-3">
-                                        <span className="text-sm font-medium text-zinc-400">Type #{index + 1}</span>
+                                        <span className="text-sm font-medium text-zinc-400">Tipo #{index + 1}</span>
                                         {ticketTypes.length > 1 && (
                                             <button
                                                 type="button"
@@ -292,12 +292,12 @@ export default function NewEventPage() {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         <div className="md:col-span-2">
-                                            <label className="block text-xs font-medium mb-1 text-zinc-500">Name</label>
+                                            <label className="block text-xs font-medium mb-1 text-zinc-500">Nombre</label>
                                             <input
                                                 type="text"
                                                 value={tt.name}
                                                 onChange={(e) => updateTicketType(index, 'name', e.target.value)}
-                                                placeholder="e.g., Early Bird, VIP"
+                                                placeholder="ej. Preventa, VIP"
                                                 className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-sky-500"
                                                 required
                                             />
@@ -319,7 +319,7 @@ export default function NewEventPage() {
                                         <div>
                                             <label className="block text-xs font-medium mb-1 text-zinc-500 flex items-center gap-1">
                                                 <Ticket className="w-3 h-3" />
-                                                Quantity
+                                                Cantidad
                                             </label>
                                             <input
                                                 type="number"
@@ -333,7 +333,7 @@ export default function NewEventPage() {
                                         <div className="md:col-span-2">
                                             <label className="block text-xs font-medium mb-1 text-zinc-500 flex items-center gap-1">
                                                 <Wine className="w-3 h-3" />
-                                                Drinks Included
+                                                Consumiciones Incluidas
                                             </label>
                                             <input
                                                 type="number"
@@ -358,10 +358,10 @@ export default function NewEventPage() {
                         {isSubmitting ? (
                             <>
                                 <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                                Creating Event...
+                                Creando Evento...
                             </>
                         ) : (
-                            'Create Event with Ticket Types'
+                            'Crear Evento con Tipos de Entrada'
                         )}
                     </button>
                 </form>

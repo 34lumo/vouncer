@@ -34,7 +34,7 @@ export async function EventsList() {
         console.error('Error fetching events:', error)
         return (
             <div className="text-center py-12">
-                <p className="text-zinc-400">Error loading events. Please try again later.</p>
+                <p className="text-zinc-400">Error al cargar los eventos. Por favor, inténtalo más tarde.</p>
             </div>
         )
     }
@@ -42,7 +42,7 @@ export async function EventsList() {
     if (!events || events.length === 0) {
         return (
             <div className="text-center py-12">
-                <p className="text-zinc-400">No upcoming events at the moment. Check back soon!</p>
+                <p className="text-zinc-400">No hay eventos próximos en este momento. ¡Vuelve pronto!</p>
             </div>
         )
     }
@@ -142,7 +142,7 @@ export async function EventsList() {
                             {/* PRIORITY 1: SOLD OUT - Red Badge */}
                             {isSoldOut && (
                                 <div className="absolute top-5 right-5 bg-red-600 text-white font-bold py-2 px-4 rounded-full text-center uppercase tracking-wide z-10">
-                                    <span className="text-xs">SOLD OUT</span>
+                                    <span className="text-xs">AGOTADO</span>
                                 </div>
                             )}
 
@@ -178,7 +178,7 @@ export async function EventsList() {
                             <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between z-10 relative">
                                 <div>
                                     <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider mb-1">
-                                        {isSoldOut ? 'Sold Out' : isSalesClosed ? 'Venta Cerrada' : isFinished ? 'Finalizado' : 'Entrada'}
+                                        {isSoldOut ? 'Agotado' : isSalesClosed ? 'Venta Cerrada' : isFinished ? 'Finalizado' : 'Entrada'}
                                     </p>
                                     <p className="text-xl font-bold text-white">{getPriceLabel(ticketTypes)}</p>
                                 </div>

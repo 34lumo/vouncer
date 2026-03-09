@@ -80,7 +80,7 @@ export default async function AdminHub() {
                                     <BarChart3 className="w-8 h-8 text-emerald-400" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold mb-2">Analytics</h3>
+                                    <h3 className="text-xl font-bold mb-2">Analíticas</h3>
                                     <p className="text-sm text-zinc-400">
                                         Métricas y estadísticas del negocio
                                     </p>

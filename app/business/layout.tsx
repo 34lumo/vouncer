@@ -50,7 +50,7 @@ export default function BusinessLayout({
                             href="/login"
                             className="text-sm text-zinc-400 hover:text-white transition-colors px-4 py-2"
                         >
-                            Login
+                            Acceso
                         </Link>
                         <Link
                             href="/business/demo"
