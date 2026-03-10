@@ -63,14 +63,14 @@ export default function AboutPage() {
 
                     <div className="grid md:grid-cols-2 gap-6">
                         <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-8">
-                            <h3 className="text-xl font-bold mb-3">Experiencia Nocturna</h3>
+                            <h3 className="text-xl font-bold mb-1">Alejandro Piñeres</h3>
                             <p className="text-zinc-400 leading-relaxed">
                                 Hemos trabajado en venues, gestionado eventos y vivido de primera mano los retos operativos que quitan el sueño a los propietarios.
                             </p>
                         </div>
 
                         <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-8">
-                            <h3 className="text-xl font-bold mb-3">Expertise Técnico</h3>
+                            <h3 className="text-xl font-bold mb-1">Luis Molina</h3>
                             <p className="text-zinc-400 leading-relaxed">
                                 Nuestro equipo de ingeniería ha construido sistemas para millones de usuarios a escala, llevando la fiabilidad empresarial a la vida nocturna.
                             </p>
