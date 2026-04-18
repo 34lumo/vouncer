@@ -8,6 +8,8 @@ import { Resend } from 'resend'
 import { render } from '@react-email/render'
 import TicketEmail from './emails/ticket-email'
 import DemoRequestEmail from './emails/demo-request-email'
+import { generateIntegrityHash } from '@/lib/wompi'
+import type { OrderMetadata } from '@/lib/wompi'
 
 // --- INTERFACES ---
 interface DemoRequestData {
@@ -304,6 +306,124 @@ export async function validateTicket(qrToken: string): Promise<ValidateTicketRes
   }
 
   return { success: false, message: 'Estado inválido.' }
+}
+
+// ── WOMPI CHECKOUT ────────────────────────────────────────────────────────────
+//
+// Prerequisite: run this migration in your Supabase project (SQL editor):
+//
+//   CREATE TABLE pending_orders (
+//     id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+//     reference       TEXT        UNIQUE NOT NULL,
+//     event_id        UUID        REFERENCES events(id)       ON DELETE CASCADE,
+//     ticket_type_id  UUID        REFERENCES ticket_types(id) ON DELETE SET NULL,
+//     quantity        INTEGER     NOT NULL DEFAULT 1,
+//     customer_email  TEXT        NOT NULL,
+//     customer_name   TEXT        NOT NULL,
+//     amount_in_cents INTEGER     NOT NULL,
+//     status          TEXT        NOT NULL DEFAULT 'pending', -- pending | confirmed | failed
+//     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+//     expires_at      TIMESTAMPTZ NOT NULL DEFAULT (now() + interval '1 hour')
+//   );
+//   ALTER TABLE pending_orders ENABLE ROW LEVEL SECURITY;
+//   -- No public reads: only the service role (webhook) can write/read this table.
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function createWompiCheckout(
+  eventId: string,
+  email: string,
+  name: string,
+  quantity: number,
+  ticketTypeId?: string,
+  metadata?: OrderMetadata,
+) {
+  const supabase = await createClient()
+  const adminSupabase = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+  const safeQuantity = Math.max(1, Math.min(10, Number(quantity) || 1))
+
+  // 1. Validate event + ticket type availability ───────────────────────────
+  const { data: event, error: eventError } = await supabase
+    .from('events')
+    .select('title, ticket_types(*)')
+    .eq('id', eventId)
+    .single()
+
+  if (eventError || !event) throw new Error('Evento no encontrado.')
+
+  let ticketPrice = 0
+
+  if (ticketTypeId) {
+    const ticketTypes = event.ticket_types as Array<{
+      id: string
+      name: string
+      price: number
+      total_tickets: number
+      sold_tickets: number
+    }> | null
+
+    const tt = ticketTypes?.find((t) => t.id === ticketTypeId)
+    if (!tt) throw new Error('Tipo de entrada no encontrado.')
+
+    const available = tt.total_tickets - tt.sold_tickets
+    if (available < safeQuantity)
+      throw new Error(`Solo quedan ${available} ${available === 1 ? 'entrada disponible' : 'entradas disponibles'}.`)
+
+    ticketPrice = tt.price
+  }
+
+  // 2. Generate unique order reference (max 100 chars, URL-safe) ────────────
+  const reference = `vc_${crypto.randomUUID().replace(/-/g, '')}`
+  // Wompi requires the amount in Colombian centavos (COP × 100)
+  const amountInCents = ticketPrice * safeQuantity * 100
+
+  // 3. Persist pending order so the webhook can confirm it ──────────────────
+  const { error: orderError } = await adminSupabase.from('pending_orders').insert({
+    reference,
+    event_id: eventId,
+    ticket_type_id: ticketTypeId ?? null,
+    quantity: safeQuantity,
+    customer_email: email,
+    customer_name: name,
+    amount_in_cents: amountInCents,
+    status: 'pending',
+    // JSONB column: null for regular purchases; TeamMetadata for team inscriptions
+    metadata: metadata ?? null,
+  })
+
+  if (orderError) {
+    console.error('❌ Error creating pending_order:', orderError)
+    throw new Error('No se pudo iniciar la compra. Inténtalo de nuevo.')
+  }
+
+  console.log(`🛒 Pending order created — reference: ${reference}`)
+
+  // 4. Build Wompi hosted-checkout URL ──────────────────────────────────────
+  const integrityHash = generateIntegrityHash(
+    reference,
+    amountInCents,
+    'COP',
+    process.env.WOMPI_INTEGRITY_SECRET!,
+  )
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://www.vouncer.com'
+
+  const wompiUrl = new URL('https://checkout.wompi.co/p/')
+  wompiUrl.searchParams.set('public-key', process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY!)
+  wompiUrl.searchParams.set('currency', 'COP')
+  wompiUrl.searchParams.set('amount-in-cents', String(amountInCents))
+  wompiUrl.searchParams.set('reference', reference)
+  wompiUrl.searchParams.set('signature:integrity', integrityHash)
+  // After payment Wompi appends ?id={transaction_id} to this URL
+  wompiUrl.searchParams.set('redirect-url', `${baseUrl}/success?event_id=${eventId}&reference=${reference}`)
+  wompiUrl.searchParams.set('customer-data:email', email)
+  wompiUrl.searchParams.set('customer-data:full-name', name)
+
+  // 5. Hand off to Wompi — Next.js redirect() triggers client navigation ────
+  redirect(wompiUrl.toString())
 }
 
 // --- FUNCIÓN DE SOLICITUD DE DEMO ---
