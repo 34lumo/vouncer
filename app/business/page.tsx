@@ -2,10 +2,8 @@ import Link from 'next/link'
 import { EncryptedText } from '@/components/ui/encrypted-text'
 import { NoiseBackground } from '@/components/ui/noise-background'
 import { InfiniteMovingCards } from '@/components/ui/infinite-moving-cards'
-import { CardBody, CardContainer, CardItem } from '@/components/ui/3d-card'
 
 export default function BusinessLandingPage() {
-    // Real implemented features of Vouncer
     const businessFeatures = [
         {
             name: "Sincronización Cloud",
@@ -34,39 +32,36 @@ export default function BusinessLandingPage() {
         },
     ]
 
+    const features = [
+        { title: "Control Total", desc: "Gestiona aforo, listas y staff desde tu panel de mando centralizado." },
+        { title: "Acceso Veloz", desc: "Escanea 1,000 entradas en 10 minutos. Sin colas, sin errores humanos." },
+        { title: "Ingresos en Vivo", desc: "Datos financieros y reportes automáticos al instante." },
+    ]
+
     return (
         <div className="relative bg-black text-white">
-            {/* Fixed Background Image with Overlay */}
             <div className="fixed inset-0 -z-10">
                 <div
-                    className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
                     style={{ backgroundImage: 'url(/background.png)' }}
                 />
                 <div className="absolute inset-0 bg-black/80" />
             </div>
 
-            {/* Hero Section */}
-            <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-                {/* Additional gradient effects */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-sky-500/10 rounded-full blur-[120px]" />
-                    <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[120px]" />
-                </div>
-
-                <div className="relative max-w-5xl mx-auto px-6 py-24 text-center">
+            <section className="relative min-h-screen flex items-center justify-center">
+                <div className="relative max-w-4xl mx-auto px-6 py-24 text-center">
                     <h1 className="mb-6">
                         <EncryptedText
                             text="El Sistema Operativo de la Noche"
                             encryptedClassName="text-zinc-500"
-                            revealedClassName="text-white font-bold text-4xl md:text-7xl tracking-tight"
+                            revealedClassName="text-white font-bold text-3xl md:text-6xl tracking-tight"
                             revealDelayMs={50}
                         />
                     </h1>
-                    <p className="text-xl md:text-2xl text-zinc-300 mb-12 leading-relaxed max-w-3xl mx-auto">
-                        Controla el aforo, evita el fraude y maximiza tus ingresos con infraestructura de ticketing en tiempo real diseñada para venues modernos.
+                    <p className="text-lg md:text-xl text-zinc-300 mb-12 leading-relaxed max-w-3xl mx-auto">
+                        Controla el aforo, evita el fraude y maximiza tus ingresos con infraestructura de ticketing en tiempo real.
                     </p>
 
-                    {/* CTA with NoiseBackground */}
                     <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                         <NoiseBackground
                             containerClassName="w-fit p-1 rounded-full"
@@ -74,7 +69,7 @@ export default function BusinessLandingPage() {
                         >
                             <Link
                                 href="/business/demo"
-                                className="block rounded-full bg-black px-8 py-3 text-white font-medium hover:bg-zinc-900 transition-all"
+                                className="block rounded-full bg-black px-8 py-3 text-white font-medium hover:bg-zinc-900 transition-colors"
                             >
                                 Reservar Demo &rarr;
                             </Link>
@@ -82,7 +77,7 @@ export default function BusinessLandingPage() {
 
                         <Link
                             href="/login"
-                            className="inline-flex items-center justify-center gap-2 border border-white/20 text-white font-semibold px-8 py-3 rounded-full hover:bg-white/5 transition-all"
+                            className="border border-white/15 text-white font-medium px-8 py-3 rounded-full hover:bg-white/5 transition-colors"
                         >
                             Acceso Clientes
                         </Link>
@@ -90,97 +85,36 @@ export default function BusinessLandingPage() {
                 </div>
             </section>
 
-            {/* 3D Product Cards Section */}
-            <section id="features" className="py-24 border-t border-white/10 bg-black/40 backdrop-blur-sm">
-                <div className="max-w-7xl mx-auto px-6">
+            <section id="features" className="py-24 border-t border-white/[0.06]">
+                <div className="max-w-5xl mx-auto px-6">
                     <div className="text-center mb-16">
-                        <h2 className="text-4xl md:text-5xl font-bold mb-4">Diseñado para Escalar</h2>
-                        <p className="text-xl text-zinc-400 max-w-2xl mx-auto">
+                        <h2 className="text-3xl md:text-4xl font-bold mb-3">Diseñado para Escalar</h2>
+                        <p className="text-lg text-zinc-400 max-w-xl mx-auto">
                             Todo lo que necesitas para operar un venue profesional.
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {/* Card 1 - Control Total */}
-                        <CardContainer className="inter-var">
-                            <CardBody className="bg-zinc-950 relative group/card dark:hover:shadow-2xl dark:hover:shadow-sky-500/[0.1] dark:bg-zinc-950 dark:border-white/[0.2] border-white/[0.1] w-auto sm:w-[30rem] rounded-xl p-10 border">
-                                <CardItem
-                                    translateZ="50"
-                                    className="text-3xl font-bold text-white mb-4"
-                                >
-                                    Control Total
-                                </CardItem>
-                                <CardItem
-                                    as="p"
-                                    translateZ="60"
-                                    className="text-zinc-400 text-base leading-relaxed"
-                                >
-                                    Gestiona aforo, listas y staff desde tu panel de mando centralizado. Todo bajo control en un solo clic.
-                                </CardItem>
-                            </CardBody>
-                        </CardContainer>
-
-                        {/* Card 2 - Acceso Veloz */}
-                        <CardContainer className="inter-var">
-                            <CardBody className="bg-zinc-950 relative group/card dark:hover:shadow-2xl dark:hover:shadow-emerald-500/[0.1] dark:bg-zinc-950 dark:border-white/[0.2] border-white/[0.1] w-auto sm:w-[30rem] rounded-xl p-10 border">
-                                <CardItem
-                                    translateZ="50"
-                                    className="text-3xl font-bold text-white mb-4"
-                                >
-                                    Acceso Veloz
-                                </CardItem>
-                                <CardItem
-                                    as="p"
-                                    translateZ="60"
-                                    className="text-zinc-400 text-base leading-relaxed"
-                                >
-                                    Escanea 1,000 entradas en 10 minutos. Tecnología optimizada para eliminar colas y errores humanos.
-                                </CardItem>
-                            </CardBody>
-                        </CardContainer>
-
-                        {/* Card 3 - Ingresos en Vivo */}
-                        <CardContainer className="inter-var">
-                            <CardBody className="bg-zinc-950 relative group/card dark:hover:shadow-2xl dark:hover:shadow-purple-500/[0.1] dark:bg-zinc-950 dark:border-white/[0.2] border-white/[0.1] w-auto sm:w-[30rem] rounded-xl p-10 border">
-                                <CardItem
-                                    translateZ="50"
-                                    className="text-3xl font-bold text-white mb-4"
-                                >
-                                    Ingresos en Vivo
-                                </CardItem>
-                                <CardItem
-                                    as="p"
-                                    translateZ="60"
-                                    className="text-zinc-400 text-base leading-relaxed"
-                                >
-                                    Mira cómo crece la caja en tiempo real. Datos financieros y reportes automáticos al instante.
-                                </CardItem>
-                            </CardBody>
-                        </CardContainer>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {features.map((f) => (
+                            <div key={f.title} className="border border-white/[0.06] rounded-xl p-8 bg-zinc-900/30 hover:border-white/[0.12] transition-colors">
+                                <h3 className="text-xl font-semibold text-white mb-3">{f.title}</h3>
+                                <p className="text-zinc-400 leading-relaxed text-sm">{f.desc}</p>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </section>
 
-            {/* Value Propositions - Moving Cards */}
-            <section id="security" className="relative py-24 border-t border-white/10">
-                {/* Background Image with 50% opacity */}
-                <div className="absolute inset-0 -z-10">
-                    <div
-                        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-50"
-                        style={{ backgroundImage: 'url(/background.png)' }}
-                    />
-                    <div className="absolute inset-0 bg-black/60" />
-                </div>
-
+            <section className="relative py-24 border-t border-white/[0.06]">
                 <div className="max-w-7xl mx-auto px-6">
                     <div className="text-center mb-12">
-                        <h2 className="text-4xl md:text-5xl font-bold mb-4">Tecnología Empresarial</h2>
-                        <p className="text-xl text-zinc-400 max-w-2xl mx-auto">
-                            Características diseñadas para la realidad de la industria nocturna.
+                        <h2 className="text-3xl md:text-4xl font-bold mb-3">Tecnología Empresarial</h2>
+                        <p className="text-lg text-zinc-400 max-w-xl mx-auto">
+                            Características diseñadas para la industria nocturna.
                         </p>
                     </div>
 
-                    <div className="h-[30rem] rounded-md flex flex-col antialiased bg-black dark:bg-grid-white/[0.05] items-center justify-center relative overflow-hidden">
+                    <div className="h-[28rem] rounded-md flex flex-col items-center justify-center relative overflow-hidden">
                         <InfiniteMovingCards
                             items={businessFeatures}
                             direction="right"
@@ -190,14 +124,13 @@ export default function BusinessLandingPage() {
                 </div>
             </section>
 
-            {/* Final CTA */}
-            <section className="py-24 border-t border-white/10 bg-black/60 backdrop-blur-sm">
-                <div className="max-w-4xl mx-auto px-6 text-center">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-6">
+            <section className="py-24 border-t border-white/[0.06]">
+                <div className="max-w-3xl mx-auto px-6 text-center">
+                    <h2 className="text-3xl md:text-4xl font-bold mb-4">
                         ¿Listo para modernizar tu venue?
                     </h2>
-                    <p className="text-xl text-zinc-400 mb-8">
-                        Únete a los venues que ya usan Vouncer para optimizar operaciones y aumentar ingresos.
+                    <p className="text-lg text-zinc-400 mb-8">
+                        Únete a los venues que ya usan Vouncer.
                     </p>
 
                     <NoiseBackground
@@ -206,7 +139,7 @@ export default function BusinessLandingPage() {
                     >
                         <Link
                             href="/business/demo"
-                            className="block rounded-full bg-black px-8 py-3 text-white font-medium hover:bg-zinc-900 transition-all"
+                            className="block rounded-full bg-black px-8 py-3 text-white font-medium hover:bg-zinc-900 transition-colors"
                         >
                             Reservar Demo &rarr;
                         </Link>
