@@ -4,8 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, CalendarDays, Clock, MapPin, Lock, Ticket, CheckCircle2 } from 'lucide-react'
 
-// Forzamos que la página sea dinámica
-export const revalidate = 0
+export const revalidate = 60
 
 interface PageProps {
   params: Promise<{ id: string }>
