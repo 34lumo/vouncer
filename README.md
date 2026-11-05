@@ -1,8 +1,8 @@
 # Vouncer
 
-Ticketing for nightclubs in Bogotá: people buy tickets for a party, get a QR by email, and the bouncer scans it at the door.
+Ticketing for nightclubs in Bogotá: people buy tickets for a party, get a QR by email, and the bouncer scans it at the door. Live at [vouncer.com](https://vouncer.com).
 
-Live at [vouncer.com](https://vouncer.com).
+![Home page of vouncer.com: hero with the club names and the weekly listing below](docs/screenshots/home.jpg)
 
 ## What it is
 
@@ -11,6 +11,10 @@ Vouncer started in February 2026 as an MVP for selling club tickets without queu
 There are two sides to the app. The public side is the event listing, the checkout and the "mis entradas" page where a guest sees their QRs. The business side (`/business`) is a landing page for venues with a demo request form, and `/admin` is where venue staff manage events and scan tickets. The whole UI is in Spanish.
 
 ## How it works
+
+![Business landing page at vouncer.com/business](docs/screenshots/business.png)
+
+The venue-facing landing at `/business`, with the demo request and the client login.
 
 - Events, ticket types, tickets and profiles live in Supabase (Postgres). Row Level Security is on, so the server uses the service role key only for the two things a guest session cannot do: increment sold tickets and read tickets for a magic link.
 - Checkout is a server action: it checks availability, inserts one ticket row per unit, bumps the stock (through an RPC when it exists, plain update otherwise) and sends one email with Resend.
@@ -38,23 +42,6 @@ npm run build                # production build
 The build needs at least `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, because the home page prerenders the event list.
 
 Database setup: run the SQL files in `supabase/` against your project. `setup_roles.sql` has the role helper and example queries, `migrations/` has the event lifecycle columns and the `increment_sold_tickets` RPC.
-
-## Project layout
-
-```
-app/
-  (main)/        public pages: home, events/[id], checkout/[id], success, mis-entradas, login
-  (main)/admin/  venue area: events CRUD, scan page, server actions
-  business/      landing page for venues, about, demo request
-  emails/        React Email templates (ticket, demo request)
-  actions.ts     purchase, validate ticket, demo request
-components/      UI pieces (navbar, checkout form, events list, skeletons, shadcn/ui)
-utils/supabase/  browser, server and public (cookie-free) Supabase clients
-lib/             helpers
-supabase/        SQL: role setup and migrations
-public/          logo and background image
-types_db.ts      generated Supabase types
-```
 
 ## Team
 
